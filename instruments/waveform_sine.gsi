@@ -1,0 +1,22 @@
+[SNESGSS Instrument]
+
+Instrument0Name=waveform_sine
+Instrument0EnvAR=15
+Instrument0EnvDR=6
+Instrument0EnvSL=5
+Instrument0EnvSR=14
+Instrument0Length=64
+Instrument0LoopStart=0
+Instrument0LoopEnd=63
+Instrument0LoopEnable=1
+Instrument0SourceLength=64
+Instrument0SourceRate=32000
+Instrument0SourceVolume=90
+Instrument0WavLoopStart=0
+Instrument0WavLoopEnd=63
+Instrument0TrebleBoost=0
+Instrument0ResampleType=4
+Instrument0DownsampleFactor=0
+Instrument0RampEnable=0
+Instrument0SourceData=000008e111ad1a4d22ad2ab73257397c4012460b4b574fea53b756b658df5a2d5a9d5a2d58df56b653b74fea4b57460b4012397c32572ab722ad1a4d11ad08e10000f71fee53e5b3dd53d549cda9c684bfeeb9f5b4a9b016ac49a94aa721a5d3a563a5d3a721a94aac49b016b4a9b9f5bfeec684cda9d549dd53e5b3ee53f71f
+
