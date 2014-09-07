@@ -68,6 +68,7 @@ struct noteFieldStruct {
 struct rowStruct {
 	int speed;
 	bool marker;
+	AnsiString name;
 	noteFieldStruct chn[8];
 };
 
@@ -223,7 +224,7 @@ class TFormMain : public TForm
 	TMenuItem *MInstrumentReplace;
 	TMenuItem *N7;
 	TMenuItem *MTransposeDialog;
-	TMenuItem *MSaveAndExport;
+	TMenuItem *MExportAndSave;
 	TGroupBox *GroupBoxMemoryUse;
 	TPaintBox *PaintBoxMemoryUse;
 	TGroupBox *GroupBoxAbout;
@@ -318,7 +319,7 @@ class TFormMain : public TForm
 	void __fastcall ListBoxInsMouseDown(TObject *Sender, TMouseButton Button,
           TShiftState Shift, int X, int Y);
 	void __fastcall TabSheetSongListEnter(TObject *Sender);
-	void __fastcall MSaveAndExportClick(TObject *Sender);
+	void __fastcall MExportAndSaveClick(TObject *Sender);
 	void __fastcall PaintBoxSongMouseUp(TObject *Sender, TMouseButton Button,
           TShiftState Shift, int X, int Y);
 	void __fastcall PaintBoxSongDblClick(TObject *Sender);
@@ -369,7 +370,8 @@ public:		// User declarations
 	void __fastcall TFormMain::InstrumentDataWrite(FILE *file,int id,int ins);
 	void __fastcall TFormMain::InstrumentDataParse(int id,int ins);
 
-	int __fastcall TFormMain::PatternGetTopRow(void);
+	int __fastcall TFormMain::PatternGetTopRow2x(void);
+	int __fastcall TFormMain::PatternScreenToActualRow(int srow);
 	void __fastcall TFormMain::CenterView(void);
 	void __fastcall TFormMain::RenderPattern(void);
 	void __fastcall TFormMain::RenderPatternColor(TCanvas *c,int row,int col,TColor bgCol);
@@ -409,7 +411,7 @@ public:		// User declarations
 	void __fastcall TFormMain::ResetSelection(void);
 	void __fastcall TFormMain::StartSelection(int col,int row);
 	void __fastcall TFormMain::UpdateSelection(void);
-	void __fastcall TFormMain::SetChannelSelection(void);
+	void __fastcall TFormMain::SetChannelSelection(bool channel,bool section);
 
 	void __fastcall TFormMain::ResetCopyBuffer(void);
 	void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift);
@@ -435,6 +437,9 @@ public:		// User declarations
 	AnsiString __fastcall TFormMain::ImportXM(AnsiString filename,bool song);
 	void __fastcall TFormMain::CompileAllSongs(void);
 	int __fastcall TFormMain::InsCalculateBRRSize(int ins,bool loop_only);
+
+	AnsiString __fastcall TFormMain::GetSectionName(int row);
+	void __fastcall TFormMain::SetSectionName(int row,AnsiString name);
 
 	int WaveOutSampleRate;
 	int WaveOutBufferSize;

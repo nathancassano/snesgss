@@ -2,7 +2,7 @@ object FormMain: TFormMain
   Left = 0
   Top = 0
   Caption = 'SNES GSS'
-  ClientHeight = 602
+  ClientHeight = 619
   ClientWidth = 982
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -22,7 +22,7 @@ object FormMain: TFormMain
     Left = 0
     Top = 0
     Width = 982
-    Height = 602
+    Height = 619
     ActivePage = TabSheetSong
     Align = alClient
     TabOrder = 0
@@ -33,7 +33,7 @@ object FormMain: TFormMain
         Left = 0
         Top = 0
         Width = 974
-        Height = 571
+        Height = 588
         Align = alClient
         OnDblClick = PaintBoxSongDblClick
         OnMouseDown = PaintBoxSongMouseDown
@@ -50,6 +50,10 @@ object FormMain: TFormMain
       Caption = 'Song list [F2]'
       ImageIndex = 3
       OnEnter = TabSheetSongListEnter
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object SpeedButtonSongUp: TSpeedButton
         Left = 359
         Top = 24
@@ -132,6 +136,10 @@ object FormMain: TFormMain
     object TabSheetInstruments: TTabSheet
       Caption = 'Instruments [F3]'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object SpeedButtonImportWav: TSpeedButton
         Left = 495
         Top = 258
@@ -720,6 +728,10 @@ object FormMain: TFormMain
       Caption = 'Info [F4]'
       ImageIndex = 2
       OnShow = TabSheetInfoShow
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object GroupBoxMemoryUse: TGroupBox
         Left = 3
         Top = 3
@@ -796,19 +808,19 @@ object FormMain: TFormMain
       object N1: TMenuItem
         Caption = '-'
       end
-      object MExport: TMenuItem
-        Caption = 'E&xport'
-        OnClick = MExportClick
+      object MExportAndSave: TMenuItem
+        Caption = 'Ex&port and Save'
+        OnClick = MExportAndSaveClick
       end
-      object MSaveAndExport: TMenuItem
-        Caption = 'Save and export'
-        OnClick = MSaveAndExportClick
+      object MExport: TMenuItem
+        Caption = '&Export'
+        OnClick = MExportClick
       end
       object N3: TMenuItem
         Caption = '-'
       end
       object MExit: TMenuItem
-        Caption = '&Exit'
+        Caption = 'E&xit'
         OnClick = MExitClick
       end
     end

@@ -4,13 +4,14 @@
 #include "UnitMain.h"
 #include "UnitTranspose.h"
 #include "UnitReplace.h"
+#include "UnitSectionName.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 TFormMain *FormMain;
 
 
-#define VERSION_STR				"SNES GSS v1.02"
+#define VERSION_STR				"SNES GSS v1.1"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
@@ -531,6 +532,8 @@ void __fastcall TFormMain::ResetSelection(void)
 
 void __fastcall TFormMain::StartSelection(int col,int row)
 {
+	if(col<1) return;
+
 	SelectionColS=col;
 	SelectionRowS=row;
 	SelectionColE=col;
@@ -549,28 +552,61 @@ void __fastcall TFormMain::UpdateSelection(void)
 
 
 
-void __fastcall TFormMain::SetChannelSelection(void)
+void __fastcall TFormMain::SetChannelSelection(bool channel,bool section)
 {
-	int col,chn;
+	int col,chn,from,to;
 
-	if(ColCur<1) return;
-
-	if(ColCur==1)
+	if(section)
 	{
-		SelectionColS=1;
-		SelectionColE=1;
+		from=RowCur;
+		to  =RowCur+1;
+
+		while(from>0)
+		{
+			if(songList[SongCur].row[from].marker) break;
+
+			--from;
+		}
+
+		while(to<MAX_ROWS)
+		{
+			if(songList[SongCur].row[to].marker) break;
+
+			++to;
+		}
 	}
 	else
 	{
-		chn=(ColCur-2)/4;
-		col=2+chn*4;
-
-		SelectionColS=col;
-		SelectionColE=col+3;
+		from=0;
+		to=MAX_ROWS;
 	}
 
-	SelectionRowS=0;
-	SelectionRowE=MAX_ROWS-1;
+	if(channel)
+	{
+		if(ColCur<1) return;
+
+		if(ColCur==1)
+		{
+			SelectionColS=1;
+			SelectionColE=1;
+		}
+		else
+		{
+			chn=(ColCur-2)/4;
+			col=2+chn*4;
+
+			SelectionColS=col;
+			SelectionColE=col+3;
+		}
+	}
+	else
+	{
+		SelectionColS=1;
+		SelectionColE=1+8*4;
+	}
+
+	SelectionRowS=from;
+	SelectionRowE=to-1;
 
 	UpdateSelection();
 	RenderPattern();
@@ -1087,6 +1123,8 @@ void __fastcall TFormMain::SongClear(int song)
 	for(row=0;row<MAX_ROWS;++row)
 	{
 		for(chn=0;chn<8;++chn) songList[song].row[row].chn[chn].value=255;
+
+		songList[song].row[row].name="";
 	}
 
 	RowCur=0;
@@ -1395,7 +1433,7 @@ bool __fastcall TFormMain::ModuleOpenFile(AnsiString filename)
 	char *text;
 	noteFieldStruct *n;
 	int ins,song,row,chn,ptr,size,note;
-	AnsiString songname;
+	AnsiString songname,name;
 
 	file=fopen(filename.c_str(),"rb");
 
@@ -1503,6 +1541,19 @@ bool __fastcall TFormMain::ModuleOpenFile(AnsiString filename)
 
 				ptr+=8;
 			}
+
+			name="";
+
+			while(ptr<size)
+			{
+				if(text[ptr]<' ') break;
+
+				name+=text[ptr];
+
+				++ptr;
+			}
+
+			songList[song].row[row].name=name;
 
 			while(ptr<size)
 			{
@@ -1686,7 +1737,7 @@ bool __fastcall TFormMain::ModuleSave(AnsiString filename)
 				if(n->value==255) fprintf(file,".."); else fprintf(file,"%2.2i",n->value);
 			}
 
-			fprintf(file,"\n");
+			fprintf(file,"%s\n",songList[song].row[row].name.c_str());
 		}
 
 		fprintf(file,"\n");
@@ -1847,7 +1898,7 @@ void __fastcall TFormMain::InsUpdateControls(void)
 	EditInsName->Text=insList[InsCur].name;
 
 	strWav="Source: ";
-	strBrr="BRR size: ";
+	strBrr="BRR: ";
 
 	if(!insList[InsCur].source)
 	{
@@ -2725,8 +2776,8 @@ int __fastcall TFormMain::SongCompile(songStruct *s_original,int start_row,int s
 {
 	static songStruct s;
 	noteFieldStruct *n,*m;
-	int row,chn,adr,channels_all,channels_off,chn_size,play_adr;
-	bool active[8],find_ins,find_vol;
+	int row,chn,adr,channels_all,channels_off,chn_size,play_adr,section_start,section_end,repeat_row;
+	bool active[8],find_ins,find_vol,repeat;
 
 	s_original->compiled_size=0;
 
@@ -2735,6 +2786,49 @@ int __fastcall TFormMain::SongCompile(songStruct *s_original,int start_row,int s
 	memcpy(&s,s_original,sizeof(songStruct));
 
 	SongCleanUp(&s);//cleanup instrument numbers and volume effect
+
+	//expand repeating sections
+
+	for(chn=0;chn<8;++chn)
+	{
+		section_start=0;
+		section_end=0;
+
+		repeat=false;
+		repeat_row=0;
+
+		for(row=0;row<MAX_ROWS;++row)
+		{
+			if(s.row[row].marker)
+			{
+				section_start=section_end;
+				section_end=row;
+				repeat=false;
+			}
+
+			n=&s.row[row].chn[chn];
+
+			if(n->effect=='R')
+			{
+				repeat=true;
+				repeat_row=section_start;
+			}
+
+			if(repeat)
+			{
+				m=&s.row[repeat_row].chn[chn];
+
+				n->note=m->note;
+				n->instrument=m->instrument;
+				if(m->effect!='R') n->effect=m->effect; else n->effect=0;
+				n->value=m->value;
+
+				++repeat_row;
+
+				if(repeat_row>=section_end) repeat_row=section_start;
+			}
+		}
+	}
 
 	//modify current row if the song needs to be played from the middle
 
@@ -3133,21 +3227,59 @@ void __fastcall TFormMain::CenterView(void)
 
 
 
-int __fastcall TFormMain::PatternGetTopRow(void)
+int __fastcall TFormMain::PatternGetTopRow2x(void)
 {
-	int row,hgt;
+	int row,hgt,phgt,rcnt;
 
 	hgt=TextFontHeight;
 
 	if(!hgt) hgt=1;//to avoid error if the font is not loaded for some reason
 
-	row=RowView-(PaintBoxSong->Height/hgt/2);
+	phgt=PaintBoxSong->Height/hgt;
+
+	rcnt=phgt/2;
+	row=RowView*2;
+
+	while(rcnt>0)
+	{
+		row-=2;
+
+		if(row<0) break;
+
+		if(songList[SongCur].row[row/2].marker||row/2==songList[SongCur].length) --rcnt;
+
+		--rcnt;
+	}
+
+	if(rcnt<0) ++row;
+
+	if(songList[SongCur].row[RowCur].marker) row+=2;
 
 	if(row<0) row=0;
 
-	if(row+PaintBoxSong->Height/TextFontHeight+1>=MAX_ROWS) row=MAX_ROWS-PaintBoxSong->Height/TextFontHeight+1;
+	if(row/2+phgt+1>=MAX_ROWS) row=(MAX_ROWS-phgt+1)*2;
 
 	return row;
+}
+
+
+
+int __fastcall TFormMain::PatternScreenToActualRow(int srow)
+{
+	int row;
+
+	row=PatternGetTopRow2x();
+
+	while(srow>0)
+	{
+		row+=2;
+
+		if(songList[SongCur].row[row/2].marker||row/2==songList[SongCur].length) --srow;
+
+		--srow;
+	}
+
+	return row/2;
 }
 
 
@@ -3158,9 +3290,9 @@ void __fastcall TFormMain::RenderPattern(void)
 	songStruct *s;
 	noteFieldStruct *n;
 	TColor bgCol;
-	int x,y,row,chn,rowhl;
+	int x,y,row,chn,rowhl,row2x;
 	char fx[2];
-	AnsiString space,rowspace1,rowspace2;
+	AnsiString rowspace1,rowspace2;
 
 	if(!PaintBoxSong->Visible) return;
 
@@ -3170,8 +3302,8 @@ void __fastcall TFormMain::RenderPattern(void)
 
 	c=PaintBoxSong->Canvas;
 
-	row=PatternGetTopRow();
-	rowhl=row;
+	row2x=PatternGetTopRow2x();
+	rowhl=row2x/2;
 
 	x=0;
 	y=0;
@@ -3201,88 +3333,124 @@ void __fastcall TFormMain::RenderPattern(void)
 	{
 		x=0;
 
-		if(s->row[row].marker) rowhl=0;
+		row=row2x/2;
 
-		if(!(rowhl%s->measure)) bgCol=TColor(0xe8e8e8); else bgCol=clWhite;
+		if(row>=MAX_ROWS) break;
 
-		if(row==RowCur) bgCol=TColor(0xffc0c0);
-
-		if(!s->row[row].marker) space=" "; else space="=";
-
-		rowspace1=space;
-		rowspace2=space;
-
-		if(row==s->loop_start) rowspace1="L";
-		if(row==s->length) rowspace2="E";
-
-		RenderPatternColor(c,row,-1,bgCol);
-		c->TextOut(x,y,rowspace1);
-		x+=TextFontWidth*1;
-
-		RenderPatternColor(c,row,0,bgCol);
-		c->TextOut(x,y,IntToStrLen(row,4));//row number
-		x+=TextFontWidth*4;
-
-		RenderPatternColor(c,row,-1,bgCol);
-		c->TextOut(x,y,rowspace2);
-		x+=TextFontWidth*1;
-
-		RenderPatternColor(c,row,1,bgCol);
-		c->TextOut(x,y,IntToStrLenDot(s->row[row].speed,2));//speed
-		x+=TextFontWidth*2;
-
-		RenderPatternColor(c,row,-1,bgCol);
-		c->TextOut(x,y,space);
-		x+=TextFontWidth*1;
-
-		for(chn=0;chn<8;++chn)
+		if(!(row2x&1))
 		{
-			n=&s->row[row].chn[chn];
-
-			RenderPatternColor(c,row,chn*4+2,bgCol);
-
-			switch(n->note)//note and octave
+			if(row&&(s->row[row].marker||(s->length<MAX_ROWS-1&&row==s->length)))
 			{
-			case 0: c->TextOut(x,y,"..."); break;
-			case 1: c->TextOut(x,y,"---"); break;
-			default: c->TextOut(x,y,NoteNames[(n->note-2)%12]+IntToStrLen((n->note-2)/12,1));
+				c->Brush->Color=Color;
+
+				while(x<PaintBoxSong->Width)
+				{
+					c->TextOut(x,y," ");
+					x+=TextFontWidth;
+				}
+
+				y+=TextFontHeight;
 			}
+		}
+		else
+		{
+			if(s->row[row].marker) rowhl=0;
 
-			x+=TextFontWidth*3;
+			if(!(rowhl%s->measure)) bgCol=TColor(0xe8e8e8); else bgCol=clWhite;
 
-			RenderPatternColor(c,row,chn*4+3,bgCol);
-			c->TextOut(x,y,IntToStrLenDot(n->instrument,2));//instrument
-			x+=TextFontWidth*2;
+			if(row==RowCur) bgCol=TColor(0xffc0c0);
 
-			RenderPatternColor(c,row,chn*4+4,bgCol);
-			sprintf(fx,"%c",n->effect?n->effect:'.');
-			c->TextOut(x,y,AnsiString(fx));//effect
+			if(row==s->loop_start) rowspace1="L"; else rowspace1=" ";
+			if(row==s->length)     rowspace2="E"; else rowspace2=" ";
+
+			RenderPatternColor(c,row,-1,bgCol);
+			c->TextOut(x,y,rowspace1);
 			x+=TextFontWidth*1;
 
-			RenderPatternColor(c,row,chn*4+5,bgCol);
-			if(n->value!=255) c->TextOut(x,y,IntToStrLen(n->value,2)); else c->TextOut(x,y,"..");//effect value
+			RenderPatternColor(c,row,0,bgCol);
+			c->TextOut(x,y,IntToStrLen(row,4));//row number
+			x+=TextFontWidth*4;
+
+			RenderPatternColor(c,row,-1,bgCol);
+			c->TextOut(x,y,rowspace2);
+			x+=TextFontWidth*1;
+
+			RenderPatternColor(c,row,1,bgCol);
+			c->TextOut(x,y,IntToStrLenDot(s->row[row].speed,2));//speed
 			x+=TextFontWidth*2;
 
 			RenderPatternColor(c,row,-1,bgCol);
-			c->TextOut(x,y,space);
+			c->TextOut(x,y," ");
 			x+=TextFontWidth*1;
+
+			for(chn=0;chn<8;++chn)
+			{
+				n=&s->row[row].chn[chn];
+
+				RenderPatternColor(c,row,chn*4+2,bgCol);
+
+				switch(n->note)//note and octave
+				{
+				case 0: c->TextOut(x,y,"..."); break;
+				case 1: c->TextOut(x,y,"---"); break;
+				default: c->TextOut(x,y,NoteNames[(n->note-2)%12]+IntToStrLen((n->note-2)/12,1));
+				}
+
+				x+=TextFontWidth*3;
+
+				RenderPatternColor(c,row,chn*4+3,bgCol);
+				c->TextOut(x,y,IntToStrLenDot(n->instrument,2));//instrument
+				x+=TextFontWidth*2;
+
+				RenderPatternColor(c,row,chn*4+4,bgCol);
+				sprintf(fx,"%c",n->effect?n->effect:'.');
+				c->TextOut(x,y,AnsiString(fx));//effect
+				x+=TextFontWidth*1;
+
+				RenderPatternColor(c,row,chn*4+5,bgCol);
+				if(n->value!=255) c->TextOut(x,y,IntToStrLen(n->value,2)); else c->TextOut(x,y,"..");//effect value
+				x+=TextFontWidth*2;
+
+				RenderPatternColor(c,row,-1,bgCol);
+				c->TextOut(x,y," ");
+				x+=TextFontWidth*1;
+			}
+
+			c->Brush->Color=Color;
+
+			if(!row||s->row[row].marker)
+			{
+				c->TextOut(x,y,s->row[row].name);
+				x+=s->row[row].name.Length()*TextFontWidth;
+			}
+
+			while(x<PaintBoxSong->Width)
+			{
+				c->TextOut(x,y," ");
+				x+=TextFontWidth;
+			}
+
+			y+=TextFontHeight;
+
+			++rowhl;
+		}
+
+		++row2x;
+	}
+
+	while(y<PaintBoxSong->Height)
+	{
+		c->Brush->Color=Color;
+
+		x=0;
+
+		while(x<PaintBoxSong->Width)
+		{
+			c->TextOut(x,y," ");
+			x+=TextFontWidth;
 		}
 
 		y+=TextFontHeight;
-
-		++row;
-		++rowhl;
-
-		if(row>=MAX_ROWS)
-		{
-			while(y<PaintBoxSong->Height)
-			{
-				c->Brush->Color=Color;
-				c->TextOut(0,y,"                                                                                 ");
-				y+=TextFontHeight;
-			}
-			break;
-		}
 	}
 }
 
@@ -3654,6 +3822,36 @@ bool __fastcall TFormMain::IsAllNoteKeysUp(void)
 
 
 
+AnsiString __fastcall TFormMain::GetSectionName(int row)
+{
+	while(row)
+	{
+		if(songList[SongCur].row[row].marker) break;
+
+		--row;
+	}
+
+	return songList[SongCur].row[row].name;
+}
+
+
+
+void __fastcall TFormMain::SetSectionName(int row,AnsiString name)
+{
+	while(row)
+	{
+		if(songList[SongCur].row[row].marker) break;
+
+		--row;
+	}
+
+	songList[SongCur].row[row].name=name;
+
+	RenderPattern();
+}
+
+
+
 void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 {
 	noteFieldStruct *n;
@@ -3939,8 +4137,13 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 					Handled=true;
 					return;
 
+				case 'A':
+					SetChannelSelection(false,SelectionHeight<=1||SelectionHeight==MAX_ROWS?true:false);
+					Handled=true;
+					return;
+
 				case 'L':
-					SetChannelSelection();
+					SetChannelSelection(true,SelectionHeight<=1||SelectionHeight==MAX_ROWS?true:false);
 					Handled=true;
 					return;
 				}
@@ -4232,6 +4435,13 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 					SongMoveRowNextMarker();
 					Handled=true;
 					return;
+
+				case VK_OEM_3:
+					FormName->EditName->Text=GetSectionName(RowCur);
+					FormName->ShowModal();
+					SetSectionName(RowCur,FormName->EditName->Text);
+					Handled=true;
+					break;
 				}
 			}
 		}
@@ -5625,7 +5835,7 @@ TMouseButton Button, TShiftState Shift, int X, int Y)
 		else//song text
 		{
 			col=PatternColumnOffsets[col];
-			row=PatternGetTopRow()+row-1;
+			row=PatternScreenToActualRow(row-1);
 
 			if(col>=0&&row>=0&&row<MAX_ROWS)
 			{
@@ -5682,7 +5892,7 @@ TShiftState Shift, int X, int Y)
 		if(col>=0&&col<81&&row>0)
 		{
 			col=PatternColumnOffsets[col];
-			row=PatternGetTopRow()+row-1;
+			row=PatternScreenToActualRow(row-1);
 
 			if(col>=1&&row>=0&&row<MAX_ROWS)
 			{
@@ -5828,7 +6038,6 @@ void __fastcall TFormMain::MExportSPCClick(TObject *Sender)
 
 	if(!SaveDialogExportSPC->Execute()) return;
 
-	SPCStop();
 	SPCCompile(&songList[SongCur],0,false,false,-1);
 
 	file=fopen(SaveDialogExportSPC->FileName.c_str(),"wb");
@@ -6479,7 +6688,7 @@ void __fastcall TFormMain::TabSheetSongListEnter(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TFormMain::MSaveAndExportClick(TObject *Sender)
+void __fastcall TFormMain::MExportAndSaveClick(TObject *Sender)
 {
 	AnsiString dir;
 
@@ -6500,7 +6709,10 @@ TMouseButton Button, TShiftState Shift, int X, int Y)
 {
 	if(SongDoubleClick)
 	{
-		SetChannelSelection();
+		if(Y/TextFontHeight>=1)
+		{
+			SetChannelSelection(true,Shift.Contains(ssShift)?false:true);
+		}
 
 		SongDoubleClick=false;
 	}
