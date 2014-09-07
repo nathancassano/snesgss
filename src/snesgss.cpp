@@ -6,6 +6,7 @@
 USEFORM("UnitMain.cpp", FormMain);
 USEFORM("UnitTranspose.cpp", FormTranspose);
 USEFORM("UnitReplace.cpp", FormReplace);
+USEFORM("UnitSectionName.cpp", FormName);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -16,6 +17,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->CreateForm(__classid(TFormMain), &FormMain);
 		Application->CreateForm(__classid(TFormTranspose), &FormTranspose);
 		Application->CreateForm(__classid(TFormReplace), &FormReplace);
+		Application->CreateForm(__classid(TFormName), &FormName);
 		Application->Run();
 	}
 	catch (Exception &exception)

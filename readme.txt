@@ -1,5 +1,6 @@
 SNES Game Sound System (or Solution)
 
+v1.1  07.09.14 - improvements to the order-less design
 v1.02 25.08.14 - minor fixes, SPC700 driver improvements
 v1.01 18.08.14 - important bug fixes, more features, transpose dialog
 v1.0  15.08.14 - first release version, with all planned features
@@ -57,7 +58,9 @@ assigned to different drums are 10 for kick, 11 for snare, 12 for toms,
 General
 
 F1 				Song editor
-F2 				Instrument editor
+F2				Song list editor
+F3 				Instrument editor
+F4              Info
 
 Song editor
 
@@ -90,9 +93,10 @@ F7				Play song from current row
 F8				Stop playing
 Enter			Hold down to play from current row
 
-Space			Set navigation marker on current row
-Home			Go to previous marker
-End				Go to next marker
+Space			Set section break on current row
+Home			Go to previous section
+End				Go to next section
+`               Enter section name, only used for easier navigation
 
 Ctrl+[ ]		Change measure, each song has its own measure
 
@@ -103,7 +107,10 @@ Ctrl+Z			Undo last change in the song text, one step
 
 Shift+Cursor	Set block selection for block functions
 
-Ctrl+L			Select current channel, all fields
+Ctrl+A			Select all channels, all fields. First key press
+                selects current section (if any), next key
+				press selects the whole song length
+Ctrl+L			Select current channel, all fields, section or whole song
 
 Ctrl+X			Cut selection
 Shift+X			Cur selection and shift the rows below up
@@ -127,6 +134,9 @@ Left click toggles the mute for a channel, right click toggles the solo mode for
 
 Click left mouse button and move the mouse while holding the button to make a block selection.
 
+Double click on a channel selects a section in that channel; if the Shift key is down, it
+selects the whole song length.
+
 
 
 Row fields
@@ -134,7 +144,7 @@ Row fields
 RRRR SS [CH1..CH8]
 
 RRRR is the row number
-SS   is speed, could be set per row, lower values mean faster speed
+SS   is speed, could be set per row, 1 to 99 (fastest to slowest, default is 20).
 CH1..CH8 are note fields, see below
 
 
@@ -163,6 +173,7 @@ Dxx is Slide Down
 Pxx is Portamento, 0 is note, 1 is slowest, 99 is fastest; has priority over the Slide
 P99 is legato mode, pitch changes instantly, like on a new note, but without keyon
 Mxy is Modulation (pitch vibrato), x is speed (1 slowest, 9 fastest), y is depth (1 min, 9 max)
+R.. is Repeat, it repeats previous section in current channel, from beginning of the section
 
 
 
