@@ -5,21 +5,27 @@
 #include "UnitTranspose.h"
 #include "UnitReplace.h"
 #include "UnitSectionName.h"
+#include "UnitSubSong.h"
+
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 TFormMain *FormMain;
 
 
-#define VERSION_STR				"SNES GSS v1.1"
+
+#define VERSION_STR				"SNES GSS v1.2"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
 #define INSTRUMENT_SIGNATURE 	"[SNESGSS Instrument]"
 
+#define EX_VOL_SIGNATURE		"[EX VOL]"
+
 #define UPDATE_RATE_HZ			160
 
 #define ENABLE_SONG_COMPRESSION
+
 
 
 #include "spc700.h"
@@ -96,8 +102,8 @@ int SelectionRowE;
 int SelectionWidth;
 int SelectionHeight;
 
-unsigned char CopyBuffer[8*4+1][MAX_ROWS];
-int CopyBufferColumnType[8*4+1];
+unsigned char CopyBuffer[8*5+1][MAX_ROWS];
+int CopyBufferColumnType[8*5+1];
 int CopyBufferWidth;
 int CopyBufferHeight;
 
@@ -171,17 +177,17 @@ const unsigned char noteKeyCodes[]={
 	'P',28
 };
 
-const int PatternColumnOffsets[]={
-	-1,0,0,0,0,
-	-1,1,1,
-	-1,2,2,2,3,3,4,5,5,
-	-1,6,6,6,7,7,8,9,9,
-	-1,10,10,10,11,11,12,13,13,
-	-1,14,14,14,15,15,16,17,17,
-	-1,18,18,18,19,19,20,21,21,
-	-1,22,22,22,23,23,24,25,25,
-	-1,26,26,26,27,27,28,29,29,
-	-1,30,30,30,31,31,32,33,33,
+const int PatternColumnOffsets[1+4+1+2+1+11*8]={
+	-1, 0, 0, 0, 0,
+	-1, 1, 1,
+	-1, 2, 2, 2, 3, 3, 4, 4, 5, 6, 6,
+	-1, 7, 7, 7, 8, 8, 9, 9,10,11,11,
+	-1,12,12,12,13,13,14,14,15,16,16,
+	-1,17,17,17,18,18,19,19,20,21,21,
+	-1,22,22,22,23,23,24,24,25,26,26,
+	-1,27,27,27,28,28,29,29,30,31,31,
+	-1,32,32,32,33,33,34,34,35,36,36,
+	-1,37,37,37,38,38,39,39,40,41,41,
 	-1
 };
 
@@ -305,44 +311,83 @@ void __fastcall TFormMain::BRREncode(int ins)
 	}
 	else
 	{
-		new_loop_start=(src_loop_start+15)/16*16;//align the loop start point to 16 samples
-
-		padding=new_loop_start-src_loop_start;//calculate padding, how many zeroes to insert at beginning
-
-		loop_size=src_loop_end-src_loop_start;//original loop length
-
-		new_loop_size=loop_size/16*16;//calculate new loop size, aligned to 16 samples
-
-		if((loop_size&15)>=8) new_loop_size+=16;//align to closest point, to minimize detune
-
-		new_length=new_loop_start+new_loop_size;//calculate new source length
-
-		sample=(short*)malloc(new_length*sizeof(short));
-
-		ptr=0;
-
-		for(i=0;i<padding;++i) sample[ptr++]=0;//add the padding bytes
-
-		for(i=0;i<src_loop_start;++i) sample[ptr++]=source[i];//copy the part before loop
-
-		if(new_loop_size==loop_size)//just copy the loop part
+		if(!insList[ins].loop_unroll)//resample the loop part, takes less memory, but lower quality of the loop
 		{
-			for(i=0;i<new_loop_size;++i) sample[ptr++]=source[src_loop_start+i];
+			new_loop_start=(src_loop_start+15)/16*16;//align the loop start point to 16 samples
+
+			padding=new_loop_start-src_loop_start;//calculate padding, how many zeroes to insert at beginning
+
+			loop_size=src_loop_end-src_loop_start;//original loop length
+
+			new_loop_size=loop_size/16*16;//calculate new loop size, aligned to 16 samples
+
+			if((loop_size&15)>=8) new_loop_size+=16;//align to closest point, to minimize detune
+
+			new_length=new_loop_start+new_loop_size;//calculate new source length
+
+			sample=(short*)malloc(new_length*sizeof(short));
+
+			ptr=0;
+
+			for(i=0;i<padding;++i) sample[ptr++]=0;//add the padding bytes
+
+			for(i=0;i<src_loop_start;++i) sample[ptr++]=source[i];//copy the part before loop
+
+			if(new_loop_size==loop_size)//just copy the loop part
+			{
+				for(i=0;i<new_loop_size;++i) sample[ptr++]=source[src_loop_start+i];
+			}
+			else
+			{
+				temp=(short*)malloc(loop_size*sizeof(short));//temp copy of the looped part, as resample function frees up the source
+
+				memcpy(temp,&source[src_loop_start],loop_size*sizeof(short));
+
+				temp=resample(temp,loop_size,new_loop_size,resample_type);
+
+				for(i=0;i<new_loop_size;++i) sample[ptr++]=temp[i];
+
+				free(temp);
+			}
+
+			BRRTempLoop=new_loop_start/16;//loop point in blocks
 		}
-		else
+		else//unroll the loop, best quality in trade for higher memory use
 		{
-			temp=(short*)malloc(loop_size*sizeof(short));//temp copy of the looped part, as resample function frees the source
+			new_loop_start=(src_loop_start+15)/16*16;//align the loop start point to 16 samples
 
-			memcpy(temp,&source[src_loop_start],loop_size*sizeof(short));
+			padding=new_loop_start-src_loop_start;//calculate padding, how many zeroes to insert at beginning
 
-			temp=resample(temp,loop_size,new_loop_size,resample_type);
+			loop_size=src_loop_end-src_loop_start;//original loop length
 
-			for(i=0;i<new_loop_size;++i) sample[ptr++]=temp[i];
+			new_length=new_loop_start;
 
-			free(temp);
+			sample=(short*)malloc(new_length*sizeof(short));
+
+			ptr=0;
+
+			for(i=0;i<padding;++i) sample[ptr++]=0;//add the padding bytes
+
+			for(i=0;i<src_loop_start;++i) sample[ptr++]=source[i];//copy the part before loop
+
+			while(1)
+			{
+				if(new_length<ptr+loop_size)
+				{
+					new_length=ptr+loop_size;
+
+					sample=(short*)realloc(sample,new_length*sizeof(short));
+				}
+
+				for(i=0;i<loop_size;++i) sample[ptr++]=source[src_loop_start+i];
+
+				new_length=ptr;
+
+				if(!(new_length&15)||new_length>=65536) break;
+			}
+
+			BRRTempLoop=new_loop_start/16;//loop point in blocks
 		}
-
-		BRRTempLoop=new_loop_start/16;//loop point in blocks
 	}
 
 	free(source);
@@ -592,17 +637,17 @@ void __fastcall TFormMain::SetChannelSelection(bool channel,bool section)
 		}
 		else
 		{
-			chn=(ColCur-2)/4;
-			col=2+chn*4;
+			chn=(ColCur-2)/5;
+			col=2+chn*5;
 
 			SelectionColS=col;
-			SelectionColE=col+3;
+			SelectionColE=col+4;
 		}
 	}
 	else
 	{
 		SelectionColS=1;
-		SelectionColE=1+8*4;
+		SelectionColE=1+8*5;
 	}
 
 	SelectionRowS=from;
@@ -667,8 +712,8 @@ void __fastcall TFormMain::Transpose(int semitones,bool block,bool song,bool cha
 		if(SelectionRowS<SelectionRowE) row=SelectionRowS; else row=SelectionRowE;
 		if(SelectionColS<SelectionColE) col=SelectionColS; else col=SelectionColE;
 
-		chn=(col-2)/4;
-		wdt=(col+SelectionWidth-2+3)/4-chn;
+		chn=(col-2)/5;
+		wdt=(col+SelectionWidth-2+4)/5-chn;
 
 		TransposeArea(semitones,SongCur,chn,row,wdt,SelectionHeight,ins);
 	}
@@ -676,7 +721,7 @@ void __fastcall TFormMain::Transpose(int semitones,bool block,bool song,bool cha
 	{
 		if(channel) song=true;
 
-		TransposeArea(semitones,song?SongCur:-1,channel?(ColCur-2)/4:-1,0,channel?1:8,MAX_ROWS,ins);
+		TransposeArea(semitones,song?SongCur:-1,channel?(ColCur-2)/5:-1,0,channel?1:8,MAX_ROWS,ins);
 	}
 }
 
@@ -718,8 +763,8 @@ void __fastcall TFormMain::ReplaceInstrument(bool block,bool song,bool channel,i
 		if(SelectionRowS<SelectionRowE) row=SelectionRowS; else row=SelectionRowE;
 		if(SelectionColS<SelectionColE) col=SelectionColS; else col=SelectionColE;
 
-		chn=(col-2)/4;
-		wdt=(col+SelectionWidth-2+3)/4-chn;
+		chn=(col-2)/5;
+		wdt=(col+SelectionWidth-2+4)/5-chn;
 
 		ReplaceInstrumentArea(SongCur,chn,row,wdt,SelectionHeight,from,to);
 	}
@@ -727,7 +772,7 @@ void __fastcall TFormMain::ReplaceInstrument(bool block,bool song,bool channel,i
 	{
 		if(channel) song=true;
 
-		ReplaceInstrumentArea(song?SongCur:-1,channel?(ColCur-2)/4:-1,0,channel?1:8,MAX_ROWS,from,to);
+		ReplaceInstrumentArea(song?SongCur:-1,channel?(ColCur-2)/5:-1,0,channel?1:8,MAX_ROWS,from,to);
 	}
 }
 
@@ -843,6 +888,7 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 {
 	noteFieldStruct *n,*m;
 	int col,row,colc,rowc,rows,rowd,chn,chncol;
+	bool oneshot;
 
 	if(copy)
 	{
@@ -854,6 +900,8 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 
 	if(col<1) return;
 
+	oneshot=true;
+
 	for(colc=0;colc<SelectionWidth;++colc)
 	{
 		if(SelectionRowS<SelectionRowE) row=SelectionRowS; else row=SelectionRowE;
@@ -864,8 +912,8 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 		}
 		else
 		{
-			chn=(col-2)/4;
-			chncol=(col-2)&3;
+			chn=(col-2)/5;
+			chncol=(col-2)%5;
 
 			if(copy)
 			{
@@ -873,8 +921,9 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 				{
 				case 0: CopyBufferColumnType[colc]=COLUMN_TYPE_NOTE;       break;
 				case 1: CopyBufferColumnType[colc]=COLUMN_TYPE_INSTRUMENT; break;
-				case 2: CopyBufferColumnType[colc]=COLUMN_TYPE_EFFECT;     break;
-				case 3: CopyBufferColumnType[colc]=COLUMN_TYPE_VALUE;      break;
+				case 2: CopyBufferColumnType[colc]=COLUMN_TYPE_VALUE;      break;
+				case 3: CopyBufferColumnType[colc]=COLUMN_TYPE_EFFECT;     break;
+				case 4: CopyBufferColumnType[colc]=COLUMN_TYPE_VALUE;      break;
 				}
 			}
 		}
@@ -893,10 +942,11 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 
 				switch(chncol)
 				{
-				case 0: if(copy) CopyBuffer[colc][rowc]=n->note;       if(cut) n->note=0;       break;
-				case 1: if(copy) CopyBuffer[colc][rowc]=n->instrument; if(cut) n->instrument=0; break;
-				case 2: if(copy) CopyBuffer[colc][rowc]=n->effect;     if(cut) n->effect=0;     break;
-				case 3: if(copy) CopyBuffer[colc][rowc]=n->value;      if(cut) n->value=255;    break;
+				case 0: if(copy) CopyBuffer[colc][rowc]=n->note;       if(cut) n->note      =0;   break;
+				case 1: if(copy) CopyBuffer[colc][rowc]=n->instrument; if(cut) n->instrument=0;   break;
+				case 2: if(copy) CopyBuffer[colc][rowc]=n->volume;     if(cut) n->volume    =255; break;
+				case 3: if(copy) CopyBuffer[colc][rowc]=n->effect;     if(cut) n->effect    =0;   break;
+				case 4: if(copy) CopyBuffer[colc][rowc]=n->value;      if(cut) n->value     =255; break;
 				}
 			}
 
@@ -909,8 +959,29 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 
 			rows=rowd+SelectionHeight;
 
+			if(oneshot)
+			{
+				if(songList[SongCur].loop_start>=rows) songList[SongCur].loop_start-=SelectionHeight;
+
+				if(songList[SongCur].length<MAX_ROWS) songList[SongCur].length-=SelectionHeight;
+			}
+
 			while(rowd<MAX_ROWS)
 			{
+				if(oneshot)
+				{
+					if(rows<MAX_ROWS)
+					{
+						songList[SongCur].row[rowd].marker=songList[SongCur].row[rows].marker;
+						songList[SongCur].row[rowd].name  =songList[SongCur].row[rows].name;
+					}
+					else
+					{
+						songList[SongCur].row[rowd].marker=false;
+						songList[SongCur].row[rowd].name  ="";
+					}
+				}
+
 				if(col==1)
 				{
 					if(rows<MAX_ROWS)
@@ -934,8 +1005,9 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 						{
 						case 0: n->note      =m->note;       break;
 						case 1: n->instrument=m->instrument; break;
-						case 2: n->effect    =m->effect;     break;
-						case 3: n->value     =m->value;      break;
+						case 2: n->value     =m->volume;     break;
+						case 3: n->effect    =m->effect;     break;
+						case 4: n->value     =m->value;      break;
 						}
 					}
 					else
@@ -944,11 +1016,11 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 						{
 						case 0: n->note      =0;   break;
 						case 1: n->instrument=0;   break;
-						case 2: n->effect    =0;   break;
-						case 3: n->value     =255; break;
+						case 2: n->volume    =255; break;
+						case 3: n->effect    =0;   break;
+						case 4: n->value     =255; break;
 						}
 					}
-
 				}
 
 				++rows;
@@ -957,6 +1029,8 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 		}
 
 		++col;
+
+		oneshot=false;
 	}
 
 	ResetSelection();
@@ -979,8 +1053,8 @@ void __fastcall TFormMain::PasteFromBuffer(bool shift)
 
 		if(col>1)
 		{
-			chn=(col-2)/4;
-			chncol=(col-2)&3;
+			chn=(col-2)/5;
+			chncol=(col-2)%5;
 		}
 		if(shift)
 		{
@@ -1008,8 +1082,9 @@ void __fastcall TFormMain::PasteFromBuffer(bool shift)
 					{
 					case 0: n->note      =m->note;       break;
 					case 1: n->instrument=m->instrument; break;
-					case 2: n->effect    =m->effect;     break;
-					case 3: n->value     =m->value;      break;
+					case 2: n->volume    =m->volume;     break;
+					case 3: n->effect    =m->effect;     break;
+					case 4: n->value     =m->value;      break;
 					}
 				}
 
@@ -1033,8 +1108,9 @@ void __fastcall TFormMain::PasteFromBuffer(bool shift)
 				{
 				case 0: if(CopyBufferColumnType[colc]==COLUMN_TYPE_NOTE)       n->note      =CopyBuffer[colc][rowc]; break;
 				case 1: if(CopyBufferColumnType[colc]==COLUMN_TYPE_INSTRUMENT) n->instrument=CopyBuffer[colc][rowc]; break;
-				case 2: if(CopyBufferColumnType[colc]==COLUMN_TYPE_EFFECT)     n->effect    =CopyBuffer[colc][rowc]; break;
-				case 3: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      n->value     =CopyBuffer[colc][rowc]; break;
+				case 2: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      n->volume    =CopyBuffer[colc][rowc]; break;
+				case 3: if(CopyBufferColumnType[colc]==COLUMN_TYPE_EFFECT)     n->effect    =CopyBuffer[colc][rowc]; break;
+				case 4: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      n->value     =CopyBuffer[colc][rowc]; break;
 				}
 			}
 
@@ -1045,7 +1121,7 @@ void __fastcall TFormMain::PasteFromBuffer(bool shift)
 
 		++col;
 
-		if(col>=34) break;
+		if(col>=42) break;
 	}
 }
 
@@ -1122,7 +1198,11 @@ void __fastcall TFormMain::SongClear(int song)
 
 	for(row=0;row<MAX_ROWS;++row)
 	{
-		for(chn=0;chn<8;++chn) songList[song].row[row].chn[chn].value=255;
+		for(chn=0;chn<8;++chn)
+		{
+			songList[song].row[row].chn[chn].value =255;
+			songList[song].row[row].chn[chn].volume=255;
+		}
 
 		songList[song].row[row].name="";
 	}
@@ -1421,6 +1501,7 @@ void __fastcall TFormMain::InstrumentDataParse(int id,int ins)
 	insList[ins].resample_type    =gss_load_int(insname+"ResampleType=");
 	insList[ins].downsample_factor=gss_load_int(insname+"DownsampleFactor=");
 	insList[ins].ramp_enable      =gss_load_int(insname+"RampEnable=")?true:false;
+	insList[ins].loop_unroll      =gss_load_int(insname+"LoopUnroll=")?true:false;
 
 	insList[ins].source=gss_load_short_data(insname+"SourceData=");
 }
@@ -1434,6 +1515,7 @@ bool __fastcall TFormMain::ModuleOpenFile(AnsiString filename)
 	noteFieldStruct *n;
 	int ins,song,row,chn,ptr,size,note;
 	AnsiString songname,name;
+	bool ex_vol;
 
 	file=fopen(filename.c_str(),"rb");
 
@@ -1457,6 +1539,8 @@ bool __fastcall TFormMain::ModuleOpenFile(AnsiString filename)
 		free(text);
 		return false;
 	}
+
+	if(gss_find_tag(EX_VOL_SIGNATURE)<0) ex_vol=false; else ex_vol=true;
 
 	ModuleClear();
 
@@ -1533,13 +1617,38 @@ bool __fastcall TFormMain::ModuleOpenFile(AnsiString filename)
 					}
 				}
 
-				n->instrument=gss_parse_num_len(text+ptr+3,2,0);
+				ptr+=3;
 
-				if(text[ptr+5]=='.') n->effect=0; else n->effect=text[ptr+5];
+				n->instrument=gss_parse_num_len(text+ptr,2,0);
 
-				n->value=gss_parse_num_len(text+ptr+6,2,255);
+				ptr+=2;
 
-				ptr+=8;
+				if(ex_vol)
+				{
+					n->volume=gss_parse_num_len(text+ptr,2,255);
+
+					ptr+=2;
+				}
+
+				if(text[ptr]=='.') n->effect=0; else n->effect=text[ptr];
+
+				ptr+=1;
+
+				n->value=gss_parse_num_len(text+ptr,2,255);
+
+				if(!ex_vol)
+				{
+					if(n->effect=='V')//convert old volume command into volume column value
+					{
+						n->volume=n->value;
+						n->effect=0;
+						n->value=255;
+					}
+
+					if(n->effect=='M') n->effect='V';//modulation has been renamed into vibrato
+				}
+
+				ptr+=2;
 			}
 
 			name="";
@@ -1635,6 +1744,7 @@ void __fastcall TFormMain::InstrumentDataWrite(FILE *file,int id,int ins)
 	fprintf(file,"Instrument%iResampleType=%i\n"    ,id,insList[ins].resample_type);
 	fprintf(file,"Instrument%iDownsampleFactor=%i\n",id,insList[ins].downsample_factor);
 	fprintf(file,"Instrument%iRampEnable=%i\n"      ,id,insList[ins].ramp_enable?1:0);
+	fprintf(file,"Instrument%iLoopUnroll=%i\n"      ,id,insList[ins].loop_unroll?1:0);
 
 	fprintf(file,"Instrument%iSourceData=",id);
 
@@ -1664,6 +1774,7 @@ bool __fastcall TFormMain::SongIsRowEmpty(songStruct *s,int row,bool marker)
 
 		sum+=n->note;
 		sum+=n->instrument;
+		sum+=(n->volume==255?0:1);
 		sum+=n->effect;
 		sum+=(n->value==255?0:1);
 	}
@@ -1695,6 +1806,7 @@ bool __fastcall TFormMain::ModuleSave(AnsiString filename)
 	if(!file) return false;
 
 	fprintf(file,"%s\n\n",PROJECT_SIGNATURE);
+	fprintf(file,"%s\n\n",EX_VOL_SIGNATURE);
 
 	for(ins=0;ins<MAX_INSTRUMENTS;++ins) InstrumentDataWrite(file,ins,ins);
 
@@ -1731,6 +1843,8 @@ bool __fastcall TFormMain::ModuleSave(AnsiString filename)
 				}
 
 				if(n->instrument) fprintf(file,"%2.2i",n->instrument); else fprintf(file,"..");
+
+				if(n->volume==255) fprintf(file,".."); else fprintf(file,"%2.2i",n->volume);
 
 				fprintf(file,"%c",n->effect?n->effect:'.');
 
@@ -1848,7 +1962,9 @@ void __fastcall TFormMain::UpdateEQ(void)
 
 int __fastcall TFormMain::InsCalculateBRRSize(int ins,bool loop_only)
 {
-	int i,len,loop_brr,div,loop_size;
+	int i,brr_len,brr_loop_len,div,loop_size;
+	int loop_cnt,new_loop_start;
+	int loop_start,loop_end;
 
 	if(!insList[ins].source) return 0;
 
@@ -1861,31 +1977,54 @@ int __fastcall TFormMain::InsCalculateBRRSize(int ins,bool loop_only)
 
 	if(!insList[ins].loop_enable)
 	{
-		len=(insList[ins].length/div+15)/16*9;
+		brr_len=(insList[ins].length/div+15)/16*9;
 
-		loop_brr=0;
+		brr_loop_len=0;
 	}
 	else
 	{
-		loop_size=(insList[ins].loop_end/div-insList[ins].loop_start/div);
+		loop_start= insList[ins].loop_start /div;
+		loop_end  =(insList[ins].loop_end+1)/div;
 
-		loop_brr=loop_size/16*9;
+		loop_size=loop_end-loop_start;
 
-		len=(insList[ins].loop_start/div+15)/16*9+loop_brr;
+		if(!insList[ins].loop_unroll)
+		{
+			brr_loop_len=loop_size/16*9;
 
-		if((loop_size&15)>=8) len+=9;
+			brr_len=(loop_start+15)/16*9+brr_loop_len;
+
+			if((loop_size&15)>=8) brr_len+=9;
+		}
+		else
+		{
+			new_loop_start=(loop_start+15)/16*16;
+
+			loop_cnt=new_loop_start;
+
+			while(1)
+			{
+				loop_cnt+=loop_size;
+
+				if(!(loop_cnt&15)||loop_cnt>=65536) break;
+			}
+
+			brr_loop_len=(loop_cnt-new_loop_start)/16*9;
+
+			brr_len=loop_cnt/16*9;
+		}
 	}
 
 	for(i=0;i<16;++i)
 	{
 		if(insList[ins].source[i]!=0)
 		{
-			len+=9;
+			brr_len+=9;
 			break;
 		}
 	}
 
-	return loop_only?loop_brr:len;
+	return loop_only?brr_loop_len:brr_len;
 }
 
 
@@ -1953,8 +2092,9 @@ void __fastcall TFormMain::InsUpdateControls(void)
 
 	TrackBarVolume->Position=insList[InsCur].source_volume;
 
-	SpeedButtonLoop->Down    =insList[InsCur].loop_enable;
-	SpeedButtonLoopRamp->Down=insList[InsCur].ramp_enable;
+	SpeedButtonLoop      ->Down=insList[InsCur].loop_enable;
+	SpeedButtonLoopRamp  ->Down=insList[InsCur].ramp_enable;
+	SpeedButtonLoopUnroll->Down=insList[InsCur].loop_unroll;
 
 	EditLength->Text=IntToStr(insList[InsCur].length);
 
@@ -2336,28 +2476,13 @@ void __fastcall TFormMain::SongCleanUp(songStruct *s)
 				if(n->instrument!=prev_ins) prev_ins=n->instrument; else n->instrument=0;
 			}
 
-			if(n->effect=='V')
-			{
-				if(n->value!=prev_vol)
-				{
-					prev_vol=n->value;
-				}
-				else
-				{
-					n->effect=0;
-					n->value=255;
-				}
-			}
+			if(n->volume!=prev_vol) prev_vol=n->volume; else n->volume=255;
 
 			if(row==s->loop_start&&s->loop_start>0)//set instrument and volume at the loop point, just in case
 			{
 				if(!n->instrument&&prev_ins>0) n->instrument=prev_ins;
 
-				if(!n->effect&&prev_vol>0)
-				{
-					n->effect='V';
-					n->value=prev_vol;
-				}
+				if(prev_vol>=0) n->volume=prev_vol;
 			}
 		}
 	}
@@ -2367,7 +2492,7 @@ void __fastcall TFormMain::SongCleanUp(songStruct *s)
 
 int __fastcall TFormMain::DelayCompile(int adr,int delay)
 {
-	const int max_short_wait=149;//max duration of the one-byte delay
+	const int max_short_wait=148;//max duration of the one-byte delay
 
 	while(delay)
 	{
@@ -2390,7 +2515,7 @@ int __fastcall TFormMain::DelayCompile(int adr,int delay)
 		{
 			if(delay>=65535)
 			{
-				SPCChnMem[adr++]=247;
+				SPCChnMem[adr++]=246;
 				SPCChnMem[adr++]=255;
 				SPCChnMem[adr++]=255;
 
@@ -2398,7 +2523,7 @@ int __fastcall TFormMain::DelayCompile(int adr,int delay)
 			}
 			else
 			{
-				SPCChnMem[adr++]=247;
+				SPCChnMem[adr++]=246;
 				SPCChnMem[adr++]=delay&255;
 				SPCChnMem[adr++]=delay>>8;
 
@@ -2417,7 +2542,7 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 	const int keyoff_gap_duration=2;//number of frames between keyoff and keyon, to prevent clicks
 	noteFieldStruct *n;
 	int row,adr,ins,speed,speed_acc,loop_adr,ins_change,effect,value,loop_start,length,size,ins_last;
-	int new_play_adr,ref_len,best_ref_len,new_size,min_size;
+	int new_play_adr,ref_len,best_ref_len,new_size,min_size,effect_volume;
 	bool change,insert_gap,key_is_on,porta_active,new_note_keyoff;
 
 	play_adr=0;
@@ -2430,6 +2555,7 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 	ins_last=1;
 	insert_gap=false;
 	effect=0;
+	effect_volume=255;
 	value=0;
 	key_is_on=false;
 	porta_active=false;
@@ -2474,6 +2600,7 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 		if(n->instrument)
 		{
 			ins_change=n->instrument;
+
 			ins_last=ins_change;
 		}
 
@@ -2481,6 +2608,13 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 		{
 			effect=n->effect;
 			value =n->value;
+
+			change=true;
+		}
+
+		if(n->volume!=255)
+		{
+			effect_volume=n->volume;
 
 			change=true;
 		}
@@ -2508,7 +2642,7 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 
 			if(n->note==1)
 			{
-				SPCChnMem[adr++]=246;//keyoff
+				SPCChnMem[adr++]=245;//keyoff
 
 				key_is_on=false;
 			}
@@ -2547,7 +2681,7 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 				//porta_active=(value?true:false);
 			}
 
-			if(effect=='M')//modulation
+			if(effect=='V')//vibrato
 			{
 				SPCChnMem[adr++]=252;
 				SPCChnMem[adr++]=(value/10%10)|((value%10)<<4);//rearrange decimal digits into hex nibbles, in reversed order
@@ -2555,21 +2689,29 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 				effect=0;
 			}
 
-			new_note_keyoff=(key_is_on&&insert_gap&&!porta_active)?true:false;
-
-			if((n->note<2&&!new_note_keyoff)&&effect=='V')//volume, only insert it here when there is no new note with preceding keyoff, otherwise insert it after keyoff
+			if(effect=='S')//pan
 			{
 				SPCChnMem[adr++]=248;
-				SPCChnMem[adr++]=((float)value*1.29f);//rescale 0..99 to 0..127
+				SPCChnMem[adr++]=(value*256/100);//recalculate 0..50..99 to 0..128..255
 
 				effect=0;
+			}
+
+			new_note_keyoff=(key_is_on&&insert_gap&&!porta_active)?true:false;
+
+			if((n->note<2&&!new_note_keyoff)&&effect_volume!=255)//volume, only insert it here when there is no new note with preceding keyoff, otherwise insert it after keyoff
+			{
+				SPCChnMem[adr++]=247;
+				SPCChnMem[adr++]=((float)effect_volume*1.29f);//rescale 0..99 to 0..127
+
+				effect_volume=255;
 			}
 
 			if(n->note>1)
 			{
 				if(new_note_keyoff)
 				{
-					SPCChnMem[adr++]=246;//keyoff
+					SPCChnMem[adr++]=245;//keyoff
 
 					adr=DelayCompile(adr,keyoff_gap_duration);
 
@@ -2589,12 +2731,12 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 					ins_change=0;
 				}
 
-				if(effect=='V')//volume, inserted after keyoff to prevent clicks
+				if(effect_volume!=255)//volume, inserted after keyoff to prevent clicks
 				{
-					SPCChnMem[adr++]=248;
-					SPCChnMem[adr++]=((float)value*1.29f);//rescale 0..99 to 0..127
+					SPCChnMem[adr++]=247;
+					SPCChnMem[adr++]=((float)effect_volume*1.29f);//rescale 0..99 to 0..127
 
-					effect=0;
+					effect_volume=255;
 				}
 
 				SPCChnMem[adr++]=(n->note-2)+150;
@@ -2614,7 +2756,7 @@ int __fastcall TFormMain::ChannelCompile(songStruct *s,int chn,int start_row,int
 
 	if(n->note>1)
 	{
-		SPCChnMem[adr++]=246;//keyoff
+		SPCChnMem[adr++]=245;//keyoff
 
 		adr=DelayCompile(adr,keyoff_gap_duration);
 	}
@@ -2740,6 +2882,7 @@ int __fastcall TFormMain::ChannelCompress(int compile_adr,int &play_adr,int loop
 
 		switch(tag)
 		{
+		case 247:
 		case 248:
 		case 249:
 		case 250:
@@ -2747,7 +2890,7 @@ int __fastcall TFormMain::ChannelCompress(int compile_adr,int &play_adr,int loop
 		case 252:
 		case 254: len=2; break;
 		case 253: len=4; break;
-		case 247:
+		case 246:
 		case 255: len=3; break;
 		default:  len=1;
 		}
@@ -2820,7 +2963,9 @@ int __fastcall TFormMain::SongCompile(songStruct *s_original,int start_row,int s
 
 				n->note=m->note;
 				n->instrument=m->instrument;
+
 				if(m->effect!='R') n->effect=m->effect; else n->effect=0;
+
 				n->value=m->value;
 
 				++repeat_row;
@@ -2854,13 +2999,9 @@ int __fastcall TFormMain::SongCompile(songStruct *s_original,int start_row,int s
 					find_ins=false;
 				}
 
-				if(find_vol&&m->effect=='V')
+				if(find_vol&&m->volume!=255)
 				{
-					if(!n->effect)
-					{
-						n->effect=m->effect;
-						n->value =m->value;
-					}
+					if(n->volume==255) n->volume=m->volume;
 
 					find_vol=false;
 				}
@@ -3104,7 +3245,8 @@ void __fastcall TFormMain::SPCPlaySong(songStruct *s,int start_row,bool mute,int
 void __fastcall TFormMain::SPCPlayRow(int start_row)
 {
 	noteFieldStruct *n,*m;
-	int chn,row,ins;
+	int chn,row,ins,vol;
+	bool find_ins,find_vol;
 
 	memset(&tempSong,0,sizeof(songStruct));
 
@@ -3123,19 +3265,38 @@ void __fastcall TFormMain::SPCPlayRow(int start_row)
 		n->note=m->note;
 
 		ins=1;
+		vol=99;
+
+		find_ins=true;
+		find_vol=true;
 
 		for(row=start_row;row>=0;--row)
 		{
+			if(!find_ins&&!find_vol) break;
+
 			m=&songList[SongCur].row[row].chn[chn];
 
-			if(m->instrument)
+			if(find_ins&&m->instrument)
 			{
 				ins=m->instrument;
-				break;
+				find_ins=false;
+			}
+
+			if(find_vol&&m->volume!=255)
+			{
+				vol=m->volume;
+				find_vol=false;
 			}
 		}
 
 		if(n->note>1) n->instrument=ins;
+
+		n->volume=vol;
+
+		n=&tempSong.row[1].chn[chn];
+
+		n->value=255;
+		n->volume=255;
 	}
 
 	SPCPlaySong(&tempSong,0,true,-1);
@@ -3147,8 +3308,20 @@ void __fastcall TFormMain::SPCPlayRow(int start_row)
 void __fastcall TFormMain::SPCPlayNote(int note,int ins)
 {
 	noteFieldStruct *n;
+	int chn,row;
 
 	memset(&tempSong,0,sizeof(songStruct));
+
+	for(row=RowCur;row<MAX_ROWS;++row)
+	{
+		for(chn=0;chn<8;++chn)
+		{
+			n=&tempSong.row[row].chn[chn];
+
+			n->value=255;
+			n->volume=255;
+		}
+	}
 
 	tempSong.length=2;
 	tempSong.loop_start=1;
@@ -3159,6 +3332,18 @@ void __fastcall TFormMain::SPCPlayNote(int note,int ins)
 
 	n->note=note;
 	n->instrument=ins+1;
+	n->volume=99;
+
+	chn=(ColCur-2)/5;
+
+	for(row=RowCur;row>=0;--row)
+	{
+		if(songList[SongCur].row[row].chn[chn].volume!=255)
+		{
+			n->volume=songList[SongCur].row[row].chn[chn].volume;
+			break;
+		}
+	}
 
 	SPCPlaySong(&tempSong,0,false,ins);
 }
@@ -3318,8 +3503,8 @@ void __fastcall TFormMain::RenderPattern(void)
 	{
 		c->Font->Color=!ChannelMute[chn]?clBlack:TColor(0xe0e0e0);
 
-		c->TextOut(x,y,"CHANNEL"+IntToStr(chn+1));
-		x+=8*TextFontWidth;
+		c->TextOut(x,y," CHANNEL"+IntToStr(chn+1)+" ");
+		x+=10*TextFontWidth;
 
 		c->Font->Color=clBlack;
 
@@ -3387,27 +3572,31 @@ void __fastcall TFormMain::RenderPattern(void)
 			{
 				n=&s->row[row].chn[chn];
 
-				RenderPatternColor(c,row,chn*4+2,bgCol);
+				RenderPatternColor(c,row,chn*5+2,bgCol);
 
 				switch(n->note)//note and octave
 				{
-				case 0: c->TextOut(x,y,"..."); break;
-				case 1: c->TextOut(x,y,"---"); break;
+				case 0:  c->TextOut(x,y,"..."); break;
+				case 1:  c->TextOut(x,y,"---"); break;
 				default: c->TextOut(x,y,NoteNames[(n->note-2)%12]+IntToStrLen((n->note-2)/12,1));
 				}
 
 				x+=TextFontWidth*3;
 
-				RenderPatternColor(c,row,chn*4+3,bgCol);
+				RenderPatternColor(c,row,chn*5+3,bgCol);
 				c->TextOut(x,y,IntToStrLenDot(n->instrument,2));//instrument
 				x+=TextFontWidth*2;
 
-				RenderPatternColor(c,row,chn*4+4,bgCol);
+				RenderPatternColor(c,row,chn*5+4,bgCol);
+				if(n->volume!=255) c->TextOut(x,y,IntToStrLen(n->volume,2)); else c->TextOut(x,y,"..");//volume
+				x+=TextFontWidth*2;
+
+				RenderPatternColor(c,row,chn*5+5,bgCol);
 				sprintf(fx,"%c",n->effect?n->effect:'.');
 				c->TextOut(x,y,AnsiString(fx));//effect
 				x+=TextFontWidth*1;
 
-				RenderPatternColor(c,row,chn*4+5,bgCol);
+				RenderPatternColor(c,row,chn*5+6,bgCol);
 				if(n->value!=255) c->TextOut(x,y,IntToStrLen(n->value,2)); else c->TextOut(x,y,"..");//effect value
 				x+=TextFontWidth*2;
 
@@ -3553,8 +3742,8 @@ void __fastcall TFormMain::SongMoveColCursor(int off)
 {
 	SongMoveCursor(0,off,true);
 
-	if(ColCur<1 ) ColCur=33;
-	if(ColCur>33) ColCur=1;
+	if(ColCur<1 ) ColCur=41;
+	if(ColCur>41) ColCur=1;
 
 	RenderPattern();
 }
@@ -3565,21 +3754,21 @@ void __fastcall TFormMain::SongMoveChannelCursor(int off)
 {
 	if(ColCur<2)
 	{
-		if(off<0) SongMoveCursor(RowCur,34-4,false); else SongMoveCursor(RowCur,2,false);
+		if(off<0) SongMoveCursor(RowCur,2+5*8-5,false); else SongMoveCursor(RowCur,2,false);
 	}
 	else
 	{
 		if(off<0)
 		{
-			SongMoveCursor(0,-4,true);
+			SongMoveCursor(0,-5,true);
 
-			if(ColCur<2) ColCur+=4*8;
+			if(ColCur<2) ColCur+=5*8;
 		}
 		else
 		{
-			SongMoveCursor(0,4,true);
+			SongMoveCursor(0,5,true);
 
-			if(ColCur>=34) ColCur-=4*8;
+			if(ColCur>=2+5*8) ColCur-=5*8;
 		}
 	}
 
@@ -3606,7 +3795,7 @@ void __fastcall TFormMain::SongDeleteShiftColumn(int col,int row)
 	}
 	else
 	{
-		chn=(col-2)/4;
+		chn=(col-2)/5;
 
 		for(rowc=row;rowc<MAX_ROWS;++rowc)
 		{
@@ -3617,19 +3806,21 @@ void __fastcall TFormMain::SongDeleteShiftColumn(int col,int row)
 			{
 			case 0: n->note      =m->note;       break;
 			case 1: n->instrument=m->instrument; break;
-			case 2: n->effect    =m->effect;     break;
-			case 3: n->value     =m->value;      break;
+			case 2: n->volume    =m->volume;     break;
+			case 3: n->effect    =m->effect;     break;
+			case 4: n->value     =m->value;      break;
 			}
 		}
 
 		n=&songList[SongCur].row[MAX_ROWS-1].chn[chn];
 
-		switch((col-2)&3)
+		switch((col-2)%5)
 		{
 		case 0: n->note      =0;   break;
 		case 1: n->instrument=0;   break;
-		case 2: n->effect    =0;   break;
-		case 3: n->value     =255; break;
+		case 2: n->volume    =255; break;
+		case 3: n->effect    =0;   break;
+		case 4: n->value     =255; break;
 		}
 	}
 }
@@ -3654,30 +3845,32 @@ void __fastcall TFormMain::SongInsertShiftColumn(int col,int row)
 	}
 	else
 	{
-		chn=(col-2)/4;
+		chn=(col-2)/5;
 
 		for(rowc=MAX_ROWS-1;rowc>row;--rowc)
 		{
 			n=&songList[SongCur].row[rowc].chn[chn];
 			m=&songList[SongCur].row[rowc-1].chn[chn];
 
-			switch((col-2)&3)
+			switch((col-2)%5)
 			{
 			case 0: n->note      =m->note;       break;
 			case 1: n->instrument=m->instrument; break;
-			case 2: n->effect    =m->effect;     break;
-			case 3: n->value     =m->value;      break;
+			case 2: n->volume    =m->volume;     break;
+			case 3: n->effect    =m->effect;     break;
+			case 4: n->value     =m->value;      break;
 			}
 		}
 
 		n=&songList[SongCur].row[row].chn[chn];
 
-		switch((col-2)&3)
+		switch((col-2)%5)
 		{
 		case 0: n->note      =0;   break;
 		case 1: n->instrument=0;   break;
-		case 2: n->effect    =0;   break;
-		case 3: n->value     =255; break;
+		case 2: n->volume    =255; break;
+		case 3: n->effect    =0;   break;
+		case 4: n->value     =255; break;
 		}
 	}
 }
@@ -3698,12 +3891,9 @@ void __fastcall TFormMain::SongDeleteShift(int col,int row)
 	}
 	else
 	{
-		col=((col-2)/4)*4+2;
+		col=((col-2)/5)*5+2;
 
-		SongDeleteShiftColumn(col+0,row);
-		SongDeleteShiftColumn(col+1,row);
-		SongDeleteShiftColumn(col+2,row);
-		SongDeleteShiftColumn(col+3,row);
+		for(chn=0;chn<5;++chn) SongDeleteShiftColumn(col+chn,row);
 	}
 
 	SongMoveRowCursor(-1);
@@ -3725,12 +3915,9 @@ void __fastcall TFormMain::SongInsertShift(int col,int row)
 	}
 	else
 	{
-		col=((col-2)/4)*4+2;
+		col=((col-2)/5)*5+2;
 
-		SongInsertShiftColumn(col+0,row);
-		SongInsertShiftColumn(col+1,row);
-		SongInsertShiftColumn(col+2,row);
-		SongInsertShiftColumn(col+3,row);
+		for(chn=0;chn<5;++chn) SongInsertShiftColumn(col+chn,row);
 	}
 
 	RenderPattern();
@@ -4039,7 +4226,7 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 					return;
 
 				case '0':
-					ToggleChannelMute((ColCur-2)/4,true);
+					ToggleChannelMute((ColCur-2)/5,true);
 					Handled=true;
 					return;
 
@@ -4160,9 +4347,9 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 
 				if(ColCur>=2)
 				{
-					n=&songList[SongCur].row[RowCur].chn[(ColCur-2)/4];
+					n=&songList[SongCur].row[RowCur].chn[(ColCur-2)/5];
 
-					switch((ColCur-2)&3)
+					switch((ColCur-2)%5)
 					{
 					case 0://check note key
 						{
@@ -4229,7 +4416,42 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 						}
 						break;
 
-					case 2://enter effect letter
+					case 2://two digit volume
+						{
+							if(Key==VK_DELETE)
+							{
+								SetUndo();
+								n->volume=255;
+								SongMoveRowCursor(AutoStep);
+								RenderPattern();
+								Handled=true;
+								return;
+							}
+
+							num=IsNumberKey(Key);
+
+							if(num>=0)
+							{
+								if(ResetNumber)
+								{
+									SetUndo();
+									n->volume=num*10;
+									ResetNumber=false;
+								}
+								else
+								{
+									n->volume+=num%10;
+									ResetNumber=true;
+								}
+
+								RenderPattern();
+								Handled=true;
+								return;
+							}
+						}
+						break;
+
+					case 3://enter effect letter
 						{
 							if(Key==VK_DELETE)
 							{
@@ -4258,7 +4480,7 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 						}
 						break;
 
-					case 3://two digit effect value number
+					case 4://two digit effect value number
 						{
 							if(Key==VK_DELETE)
 							{
@@ -4625,7 +4847,7 @@ void __fastcall TFormMain::RenderMemoryUse(void)
 	c->Brush->Color=clRed;
 	c->Rectangle(0,y,15,y+15);
 	c->Brush->Color=Color;
-	c->TextOut(20,y-1,"Music data): "+IntToStr(SPCMusicSize)+" bytes (current), "+IntToStr(SPCMusicLargestSize)+" bytes (largest)           ");
+	c->TextOut(20,y-1,"Music data: "+IntToStr(SPCMusicSize)+" bytes (current), "+IntToStr(SPCMusicLargestSize)+" bytes (largest)           ");
 
 	y+=20;
 
@@ -5102,14 +5324,12 @@ AnsiString __fastcall TFormMain::ImportXM(AnsiString filename,bool song)
 
 					if(vol)
 					{
-						songList[dst_song].row[dst_row].chn[chn].effect='V';
-
 						vol=(int)((float)vol*1.547f);
 
 						if(vol<1)  vol=1;
 						if(vol>99) vol=99;
 
-						songList[dst_song].row[dst_row].chn[chn].value=vol;
+						songList[dst_song].row[dst_row].chn[chn].volume=vol;
 					}
 
 				}
@@ -5819,11 +6039,11 @@ TMouseButton Button, TShiftState Shift, int X, int Y)
 	col=X/TextFontWidth;
 	row=Y/TextFontHeight;
 
-	if(col>=0&&col<81)
+	if(col>=0&&col<(1+4+1+2+1+11*8))
 	{
 		if(!row)//pattern header
 		{
-			chn=(col-9)/9;
+			chn=(col-9)/11;
 
 			if(col>=9)
 			{
@@ -5889,7 +6109,7 @@ TShiftState Shift, int X, int Y)
 			}
 		}
 
-		if(col>=0&&col<81&&row>0)
+		if(col>=0&&col<(1+4+1+2+1+11*8)&&row>0)
 		{
 			col=PatternColumnOffsets[col];
 			row=PatternScreenToActualRow(row-1);
@@ -5940,7 +6160,7 @@ void __fastcall TFormMain::MAutostepClick(TObject *Sender)
 {
 	++AutoStep;
 
-	if(AutoStep>16) AutoStep=1;
+	if(AutoStep>16) AutoStep=0;
 
 	UpdateInfo();
 }
@@ -6645,6 +6865,7 @@ void __fastcall TFormMain::MImportMidiClick(TObject *Sender)
 	CompileAllSongs();
 	UpdateAll();
 }
+
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMain::MTransposeDialogClick(TObject *Sender)
@@ -6722,6 +6943,259 @@ TMouseButton Button, TShiftState Shift, int X, int Y)
 void __fastcall TFormMain::PaintBoxSongDblClick(TObject *Sender)
 {
 	SongDoubleClick=true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
+{
+	static unsigned char order[256][5];
+	const char export_id[]="# FamiTracker text export";
+	FILE *file;
+	char *text;
+	int c,chn,pos,ptr,ptn,val,sub,note,srow,drow,size,order_len,pattern_len,loop_pos;
+	bool cut;
+
+	struct rowStruct {
+		unsigned char chn[5];
+		unsigned char speed;
+	};
+
+	struct patternStruct {
+		rowStruct row[256];
+		int length;
+	};
+
+	struct songStruct {
+		patternStruct pattern[256];
+	};
+
+	songStruct *song;
+	rowStruct *row;
+
+	if(!OpenDialogImportFTM->Execute()) return;
+
+	file=fopen(OpenDialogImportFTM->FileName.c_str(),"rt");
+
+	FormSubSong->Import=false;
+	FormSubSong->ShowModal();
+
+	if(!file) return;
+
+	fseek(file,0,SEEK_END);
+	size=ftell(file);
+	fseek(file,0,SEEK_SET);
+
+	text=(char*)malloc(size);
+
+	fread(text,size,1,file);
+	fclose(file);
+
+	if(memcmp(text,export_id,strlen(export_id)))
+	{
+		Application->MessageBox("Not a FamiTracker text export file","Error",MB_OK);
+		free(text);
+	}
+
+	gss_init(text,size);
+
+	ptr=0;
+
+	for(sub=0;sub<FormSubSong->UpDownSubSong->Position;++sub)
+	{
+		while(ptr<size)
+		{
+			if(!memcmp(&text[ptr],"TRACK",5))
+			{
+				ptr+=5;
+				break;
+			}
+
+			++ptr;
+		}
+	}
+
+	if(ptr<0)
+	{
+		Application->MessageBox("Can't find TRACK section","Error",MB_OK);
+		free(text);
+	}
+
+	pattern_len=0;
+
+	while(ptr<size)
+	{
+		if(text[ptr]>='0'&&text[ptr]<='9')
+		{
+			while(1)
+			{
+				c=text[ptr++];
+
+				if(!(c>='0'&&c<='9')) break;
+
+				pattern_len=pattern_len*10+(c-'0');
+			}
+
+			break;
+		}
+
+		++ptr;
+	}
+
+	while(ptr<size) if(memcmp(&text[ptr],"ORDER",5)) ++ptr; else break;
+
+	if(ptr<0)
+	{
+		Application->MessageBox("Can't find ORDER section","Error",MB_OK);
+		free(text);
+	}
+
+	order_len=0;
+
+	while(1)
+	{
+		while(ptr<size) if(text[ptr]!=':'&&text[ptr]>=' ') ++ptr; else break;
+
+		if(text[ptr]!=':') break;
+
+		ptr+=2;
+
+		for(chn=0;chn<5;++chn)
+		{
+			order[order_len][chn]=(gss_hex_to_byte(text[ptr+0])<<4)|gss_hex_to_byte(text[ptr+1]);
+
+			if(chn<4) ptr+=3; else ptr+=2;
+		}
+
+		while(ptr<size) if(text[ptr]<' ') ++ptr; else break;
+
+		++order_len;
+
+		if(text[ptr]!='O') break;
+	}
+
+	song=(songStruct*)malloc(sizeof(songStruct));
+
+	memset(song,0,sizeof(songStruct));
+
+	loop_pos=0;
+
+	while(ptr<size)
+	{
+		if(!memcmp(&text[ptr],"TRACK",5)) break;
+
+		if(memcmp(&text[ptr],"PATTERN",7))
+		{
+			++ptr;
+			continue;
+		}
+
+		ptn=(gss_hex_to_byte(text[ptr+8])<<4)+gss_hex_to_byte(text[ptr+9]);
+
+		ptr+=10;
+
+		song->pattern[ptn].length=0;
+
+		cut=false;
+
+		for(srow=0;srow<pattern_len;++srow)
+		{
+			while(ptr<size) if(text[ptr]<' ') ++ptr; else break;
+
+			if(memcmp(&text[ptr],"ROW",3)) break;
+
+			row=&song->pattern[ptn].row[srow];
+
+			for(chn=0;chn<5;++chn)
+			{
+				while(ptr<size) if(text[ptr]!=':') ++ptr; else break;
+
+				note=0;
+
+				switch(text[ptr+2])
+				{
+				case '-': note=1; break;
+				case 'C': note=2; break;
+				case 'D': note=4; break;
+				case 'E': note=6; break;
+				case 'F': note=7; break;
+				case 'G': note=9; break;
+				case 'A': note=11; break;
+				case 'B': note=13; break;
+				}
+
+				if(note>1)
+				{
+					if(text[ptr+3]=='#') ++note;
+
+					note=note+(text[ptr+4]-'0')*12;
+				}
+
+				val=(gss_hex_to_byte(text[ptr+12])<<4)+gss_hex_to_byte(text[ptr+13]);
+
+				switch(text[ptr+11])
+				{
+				case 'B': cut=true; loop_pos=val; break;
+				case 'C': cut=true; break;
+				case 'D': if(!val) cut=true; break;
+				case 'F': row->speed=160*val/60; break;
+				}
+
+				row->chn[chn]=note;
+
+				ptr+=15;
+			}
+
+			++song->pattern[ptn].length;
+
+			if(cut) break;
+		}
+	}
+
+	free(text);
+
+	//convert
+
+	SongClear(SongCur);
+
+	drow=0;
+
+	for(pos=0;pos<order_len;++pos)
+	{
+		if(pos==loop_pos) songList[SongCur].loop_start=drow;
+
+		songList[SongCur].row[drow].marker=true;
+
+		for(srow=0;srow<song->pattern[order[pos][0]].length;++srow)
+		{
+			for(chn=0;chn<5;++chn)
+			{
+				row=&song->pattern[order[pos][chn]].row[srow];
+
+				if(row->speed) songList[SongCur].row[drow].speed=row->speed;
+
+				songList[SongCur].row[drow].chn[chn].note=row->chn[chn];
+			}
+
+			++drow;
+		}
+	}
+
+	songList[SongCur].row[drow].marker=true;
+	songList[SongCur].length=drow;
+
+	free(song);
+
+	CompileAllSongs();
+	UpdateAll();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::SpeedButtonLoopUnrollClick(TObject *Sender)
+{
+	insList[InsCur].loop_unroll=SpeedButtonLoopUnroll->Down;
+	InsUpdateControls();
+
+	UpdateSampleData=true;
 }
 //---------------------------------------------------------------------------
 

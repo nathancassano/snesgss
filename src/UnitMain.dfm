@@ -2,7 +2,7 @@ object FormMain: TFormMain
   Left = 0
   Top = 0
   Caption = 'SNES GSS'
-  ClientHeight = 619
+  ClientHeight = 694
   ClientWidth = 982
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -22,18 +22,22 @@ object FormMain: TFormMain
     Left = 0
     Top = 0
     Width = 982
-    Height = 619
+    Height = 694
     ActivePage = TabSheetSong
     Align = alClient
     TabOrder = 0
     TabStop = False
     object TabSheetSong: TTabSheet
       Caption = 'Song [F1]'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object PaintBoxSong: TPaintBox
         Left = 0
         Top = 0
         Width = 974
-        Height = 588
+        Height = 663
         Align = alClient
         OnDblClick = PaintBoxSongDblClick
         OnMouseDown = PaintBoxSongMouseDown
@@ -141,9 +145,9 @@ object FormMain: TFormMain
       ExplicitWidth = 0
       ExplicitHeight = 0
       object SpeedButtonImportWav: TSpeedButton
-        Left = 495
+        Left = 514
         Top = 258
-        Width = 50
+        Width = 45
         Height = 24
         Hint = 
           'Load a wave from WAV file. The sound should sampled be at 8000, ' +
@@ -154,41 +158,41 @@ object FormMain: TFormMain
         OnClick = SpeedButtonImportWavClick
       end
       object SpeedButtonInsMoveUp: TSpeedButton
-        Left = 495
+        Left = 514
         Top = 289
-        Width = 50
+        Width = 45
         Height = 24
         Caption = 'Up'
         OnClick = SpeedButtonInsMoveUpClick
       end
       object SpeedButtonInsMoveDown: TSpeedButton
-        Left = 548
+        Left = 560
         Top = 289
-        Width = 50
+        Width = 45
         Height = 24
         Caption = 'Down'
         OnClick = SpeedButtonInsMoveDownClick
       end
       object SpeedButtonInsDelete: TSpeedButton
-        Left = 601
+        Left = 606
         Top = 289
-        Width = 50
+        Width = 45
         Height = 24
         Caption = 'Del'
         OnClick = SpeedButtonInsDeleteClick
       end
       object SpeedButtonInsLoad: TSpeedButton
-        Left = 548
+        Left = 560
         Top = 258
-        Width = 50
+        Width = 45
         Height = 24
         Caption = 'Load'
         OnClick = SpeedButtonInsLoadClick
       end
       object SpeedButtonInsSave: TSpeedButton
-        Left = 601
+        Left = 606
         Top = 258
-        Width = 50
+        Width = 45
         Height = 24
         Caption = 'Save'
         OnClick = SpeedButtonInsSaveClick
@@ -584,14 +588,14 @@ object FormMain: TFormMain
       object GroupBoxSampleLoop: TGroupBox
         Left = 8
         Top = 250
-        Width = 481
+        Width = 500
         Height = 65
         Caption = 'Loop options'
         TabOrder = 7
         object SpeedButtonLoop: TSpeedButton
           Left = 15
           Top = 26
-          Width = 34
+          Width = 29
           Height = 24
           Hint = 'Enable loop'
           AllowAllUp = True
@@ -602,14 +606,14 @@ object FormMain: TFormMain
           OnClick = SpeedButtonLoopClick
         end
         object LabelLoopStart: TLabel
-          Left = 100
+          Left = 139
           Top = 29
           Width = 35
           Height = 16
           Caption = 'From:'
         end
         object SpeedButtonLoopToBegin: TSpeedButton
-          Left = 211
+          Left = 250
           Top = 26
           Width = 32
           Height = 24
@@ -617,14 +621,14 @@ object FormMain: TFormMain
           OnClick = SpeedButtonLoopToBeginClick
         end
         object LabelLoopEnd: TLabel
-          Left = 251
+          Left = 285
           Top = 29
           Width = 20
           Height = 16
           Caption = 'To:'
         end
         object SpeedButtonLoopToEnd: TSpeedButton
-          Left = 350
+          Left = 379
           Top = 26
           Width = 32
           Height = 24
@@ -632,9 +636,9 @@ object FormMain: TFormMain
           OnClick = SpeedButtonLoopToEndClick
         end
         object SpeedButtonLoopWav: TSpeedButton
-          Left = 392
+          Left = 418
           Top = 26
-          Width = 74
+          Width = 70
           Height = 24
           Hint = 'Take the loop points from WAV file'
           Caption = 'From WAV'
@@ -643,7 +647,7 @@ object FormMain: TFormMain
           OnClick = SpeedButtonLoopWavClick
         end
         object SpeedButtonLoopRamp: TSpeedButton
-          Left = 51
+          Left = 46
           Top = 26
           Width = 42
           Height = 24
@@ -656,7 +660,7 @@ object FormMain: TFormMain
           OnClick = SpeedButtonLoopRampClick
         end
         object SpeedButtonLoopStartInc: TSpeedButton
-          Left = 188
+          Left = 227
           Top = 26
           Width = 23
           Height = 12
@@ -664,7 +668,7 @@ object FormMain: TFormMain
           OnMouseDown = SpeedButtonLoopStartIncMouseDown
         end
         object SpeedButtonLoopStartDec: TSpeedButton
-          Left = 188
+          Left = 227
           Top = 38
           Width = 23
           Height = 12
@@ -672,7 +676,7 @@ object FormMain: TFormMain
           OnMouseDown = SpeedButtonLoopStartDecMouseDown
         end
         object SpeedButtonLoopEndInc: TSpeedButton
-          Left = 327
+          Left = 356
           Top = 26
           Width = 23
           Height = 12
@@ -680,15 +684,30 @@ object FormMain: TFormMain
           OnMouseDown = SpeedButtonLoopEndIncMouseDown
         end
         object SpeedButtonLoopEndDec: TSpeedButton
-          Left = 327
+          Left = 356
           Top = 38
           Width = 23
           Height = 12
           Caption = '-'
           OnMouseDown = SpeedButtonLoopEndDecMouseDown
         end
+        object SpeedButtonLoopUnroll: TSpeedButton
+          Left = 90
+          Top = 26
+          Width = 42
+          Height = 24
+          Hint = 
+            'Unroll loop to closest 16x rather than resample. Best quality, b' +
+            'ut takes more memory'
+          AllowAllUp = True
+          GroupIndex = 6
+          Caption = 'Unroll'
+          ParentShowHint = False
+          ShowHint = True
+          OnClick = SpeedButtonLoopUnrollClick
+        end
         object EditLoopStart: TEdit
-          Left = 139
+          Left = 178
           Top = 26
           Width = 49
           Height = 24
@@ -698,7 +717,7 @@ object FormMain: TFormMain
           OnKeyPress = EditLengthKeyPress
         end
         object EditLoopEnd: TEdit
-          Left = 278
+          Left = 307
           Top = 26
           Width = 49
           Height = 24
@@ -858,6 +877,10 @@ object FormMain: TFormMain
       object MImportMidi: TMenuItem
         Caption = 'Import notes from MIDI'
         OnClick = MImportMidiClick
+      end
+      object MImportFamiTracker: TMenuItem
+        Caption = 'Import FamiTracker text'
+        OnClick = MImportFamiTrackerClick
       end
       object N5: TMenuItem
         Caption = '-'
@@ -1054,6 +1077,15 @@ object FormMain: TFormMain
     Options = [ofEnableSizing]
     Title = 'Import MIDI file'
     Left = 560
+    Top = 424
+  end
+  object OpenDialogImportFTM: TOpenDialog
+    DefaultExt = 'txt'
+    Filter = 'Text files (*.txt)|*.txt|All files (*.*)|*.*'
+    InitialDir = '.'
+    Options = [ofEnableSizing]
+    Title = 'Import FamiTracker text'
+    Left = 592
     Top = 424
   end
 end

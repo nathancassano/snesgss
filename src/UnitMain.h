@@ -40,6 +40,7 @@ struct instrumentStruct {
 	int loop_start;
 	int loop_end;
 	bool loop_enable;
+	bool loop_unroll;
 
 	int wav_loop_start;
 	int wav_loop_end;
@@ -63,6 +64,7 @@ struct noteFieldStruct {
 	unsigned char instrument;
 	unsigned char effect;
 	unsigned char value;
+	unsigned char volume;
 };
 
 struct rowStruct {
@@ -233,6 +235,9 @@ class TFormMain : public TForm
 	TLabel *Label2;
 	TLabel *Label3;
 	TLabel *Label7;
+	TMenuItem *MImportFamiTracker;
+	TOpenDialog *OpenDialogImportFTM;
+	TSpeedButton *SpeedButtonLoopUnroll;
 	void __fastcall FormCreate(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall MExitClick(TObject *Sender);
@@ -323,6 +328,8 @@ class TFormMain : public TForm
 	void __fastcall PaintBoxSongMouseUp(TObject *Sender, TMouseButton Button,
           TShiftState Shift, int X, int Y);
 	void __fastcall PaintBoxSongDblClick(TObject *Sender);
+	void __fastcall MImportFamiTrackerClick(TObject *Sender);
+	void __fastcall SpeedButtonLoopUnrollClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TFormMain(TComponent* Owner);

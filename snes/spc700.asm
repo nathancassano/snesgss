@@ -186,7 +186,9 @@ editorInit:
 
 	jsr initDSPAndVars
 
-	ldx #0
+	ldx #1
+	stx {D_STEREO}			//enable stereo in the editor, mono by default
+	dex
 	jsr	startMusic
 
 
@@ -440,6 +442,13 @@ cmdLoad:
 	jsr setReady
 
 	jsr streamStop			//stop BRR streaming to prevent glitches after loading
+
+	ldx #0
+	stx {D_KON}
+	dex
+	stx {D_KOF}
+
+	jsr bufKeyOffApply
 
 	ldx #$ef
 	txs
@@ -1098,16 +1107,18 @@ updateChannel:
 
 	jsr readChannelByteZ		//read a new byte, set Y to zero, X to D_CH0x
 
-	cmp #150
+	cmp #149
 	bcc .setShortDelay
-	cmp #246
+	cmp #245
 	beq .keyOff
 	bcc .newNote
 
-	cmp #247
+	cmp #246
 	beq .setLongDelay
-	cmp #248
+	cmp #247
 	beq .setEffectVolume
+	cmp #248
+	beq .setEffectPan
 	cmp #249
 	beq .setEffectDetune
 	cmp #250
@@ -1119,7 +1130,8 @@ updateChannel:
 	cmp #253
 	beq .setReference
 	cmp #254
-	beq .setInstrument
+	bne .jumpLoop
+	jmp .setInstrument
 
 .jumpLoop:	//255
 
@@ -1191,6 +1203,18 @@ updateChannel:
 
 
 
+.setEffectPan:
+
+	jsr readChannelByte		//read pan value
+
+	sta {D_CHNPAN},x
+
+	jsr updateChannelVolume	//apply volume and pan
+
+	bra .readLoop
+
+
+
 .setEffectDetune:
 
 	jsr readChannelByte		//read detune value
@@ -1198,7 +1222,7 @@ updateChannel:
 	sta {M_DETUNE},x
 	inc {D_PITCH_UPD}		//set pitch update flag
 
-	bra .readLoop
+	jmp .readLoop
 
 
 
@@ -1208,7 +1232,7 @@ updateChannel:
 
 	sta {M_SLIDE},x
 
-	bra .readLoop
+	jmp .readLoop
 
 
 
