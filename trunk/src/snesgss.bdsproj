@@ -212,6 +212,7 @@
         <FILE FILENAME="UnitTranspose.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="UnitTranspose" FORMNAME="FormTranspose" DESIGNCLASS="" ADDITIONAL="UnitTranspose.h"/>
         <FILE FILENAME="UnitReplace.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="UnitReplace" FORMNAME="FormReplace" DESIGNCLASS="" ADDITIONAL="UnitReplace.h"/>
         <FILE FILENAME="UnitSectionName.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="UnitSectionName" FORMNAME="FormName" DESIGNCLASS="" ADDITIONAL="UnitSectionName.h"/>
+        <FILE FILENAME="UnitSubSong.cpp" CONTAINERID="CCompiler" LOCALCOMMAND="" UNITNAME="UnitSubSong" FORMNAME="FormSubSong" DESIGNCLASS="" ADDITIONAL="UnitSubSong.h"/>
         <FILE FILENAME="gme" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="gme\blargg_common.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
         <FILE FILENAME="gme\blargg_config.h" CONTAINERID="" LOCALCOMMAND="" UNITNAME="" FORMNAME="" DESIGNCLASS=""/>
@@ -284,7 +285,7 @@
           <Debugging Name="DebugSourceDirs"></Debugging>
         </Debugging>
         <Parameters>
-          <Parameters Name="RunParams">test_centering.gsm</Parameters>
+          <Parameters Name="RunParams"></Parameters>
           <Parameters Name="Launcher"></Parameters>
           <Parameters Name="UseLauncher">False</Parameters>
           <Parameters Name="DebugCWD"></Parameters>
