@@ -3312,17 +3312,6 @@ void __fastcall TFormMain::SPCPlayNote(int note,int ins)
 
 	memset(&tempSong,0,sizeof(songStruct));
 
-	for(row=RowCur;row<MAX_ROWS;++row)
-	{
-		for(chn=0;chn<8;++chn)
-		{
-			n=&tempSong.row[row].chn[chn];
-
-			n->value=255;
-			n->volume=255;
-		}
-	}
-
 	tempSong.length=2;
 	tempSong.loop_start=1;
 
@@ -3344,6 +3333,11 @@ void __fastcall TFormMain::SPCPlayNote(int note,int ins)
 			break;
 		}
 	}
+
+	n=&tempSong.row[1].chn[0];
+
+	n->value=255;
+	n->volume=255;
 
 	SPCPlaySong(&tempSong,0,false,ins);
 }
@@ -5441,7 +5435,7 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 	AutoStep=config_read_int("SongAutoStep",1);
 
 	PaintBoxSong->Font->Name=config_read_string("SongFontName","Courier New");
-	PaintBoxSong->Font->Size=config_read_int("SongFontSize",12);
+	PaintBoxSong->Font->Size=config_read_int("SongFontSize",10);
 
 	config_close();
 
