@@ -1,0 +1,25 @@
+[SNESGSS Instrument]
+
+Instrument0Name=saw
+Instrument0EnvAR=15
+Instrument0EnvDR=6
+Instrument0EnvSL=5
+Instrument0EnvSR=14
+Instrument0Length=64
+Instrument0LoopStart=0
+Instrument0LoopEnd=63
+Instrument0LoopEnable=1
+Instrument0SourceLength=64
+Instrument0SourceRate=32000
+Instrument0SourceVolume=90
+Instrument0WavLoopStart=-1
+Instrument0WavLoopEnd=-1
+Instrument0EQLow=0
+Instrument0EQMid=0
+Instrument0EQHigh=0
+Instrument0ResampleType=4
+Instrument0DownsampleFactor=0
+Instrument0RampEnable=0
+Instrument0LoopUnroll=0
+Instrument0SourceData=845a88388c148ff393cf97ad9b899f67a344a722aaffaedbb2b9b696ba74be50c22dc60ac9e8cdc5d1a2d580d95ddd3be117e4f4e8d1ecaff08cf469f846fc23000003dd07ba0b970f741351172f1b0c1ee922c526a32a802e5e323b361839f63dd341b0458c496a4d475125550158de5cbc6099647768536c31700d73ec77c8
+
