@@ -17,25 +17,25 @@ __published:	// IDE-managed Components
 	TRadioButton *RadioButtonAllSongs;
 	TRadioButton *RadioButtonCurrentSong;
 	TRadioButton *RadioButtonCurrentChannel;
-	TSpeedButton *SpeedButtonTranspose;
+	TSpeedButton *SpeedButtonOK;
 	TSpeedButton *SpeedButtonCancel;
 	TGroupBox *GroupBox1;
 	TRadioButton *RadioButtonAllInstruments;
 	TRadioButton *RadioButtonCurrentInstrument;
 	TRadioButton *RadioButtonBlock;
-	TEdit *EditTranspose;
-	TUpDown *UpDownTranspose;
-	TLabel *Label1;
-	void __fastcall SpeedButtonTransposeClick(TObject *Sender);
+	TEdit *EditValue;
+	TUpDown *UpDownValue;
+	TLabel *LabelHint;
+	void __fastcall SpeedButtonOKClick(TObject *Sender);
 	void __fastcall SpeedButtonCancelClick(TObject *Sender);
 	void __fastcall FormCreate(TObject *Sender);
-	void __fastcall EditTransposeKeyPress(TObject *Sender, char &Key);
+	void __fastcall EditValueKeyPress(TObject *Sender, char &Key);
 	void __fastcall FormShow(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TFormTranspose(TComponent* Owner);
 
-	bool Transpose;
+	bool Confirm;
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TFormTranspose *FormTranspose;

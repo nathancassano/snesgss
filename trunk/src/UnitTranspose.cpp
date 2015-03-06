@@ -15,24 +15,24 @@ __fastcall TFormTranspose::TFormTranspose(TComponent* Owner)
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TFormTranspose::SpeedButtonTransposeClick(TObject *Sender)
+void __fastcall TFormTranspose::SpeedButtonOKClick(TObject *Sender)
 {
-	Transpose=true;
+	Confirm=true;
 	Close();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFormTranspose::SpeedButtonCancelClick(TObject *Sender)
 {
-	Transpose=false;
+	Confirm=false;
 	Close();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFormTranspose::FormCreate(TObject *Sender)
 {
-	Transpose=false;
+	Confirm=false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFormTranspose::EditTransposeKeyPress(TObject *Sender, char &Key)
+void __fastcall TFormTranspose::EditValueKeyPress(TObject *Sender, char &Key)
 {
 	if(!((Key>='0'&&Key<='9')||Key=='-'||Key==VK_BACK||Key==VK_DELETE)) Key=0;
 }

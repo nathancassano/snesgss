@@ -238,6 +238,7 @@ class TFormMain : public TForm
 	TMenuItem *MImportFamiTracker;
 	TOpenDialog *OpenDialogImportFTM;
 	TSpeedButton *SpeedButtonLoopUnroll;
+	TMenuItem *MSongScaleVolume;
 	void __fastcall FormCreate(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall MExitClick(TObject *Sender);
@@ -330,6 +331,7 @@ class TFormMain : public TForm
 	void __fastcall PaintBoxSongDblClick(TObject *Sender);
 	void __fastcall MImportFamiTrackerClick(TObject *Sender);
 	void __fastcall SpeedButtonLoopUnrollClick(TObject *Sender);
+	void __fastcall MSongScaleVolumeClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TFormMain(TComponent* Owner);
@@ -426,6 +428,9 @@ public:		// User declarations
 
 	void __fastcall TFormMain::TransposeArea(int semitones,int song,int chn,int row,int width,int height,int ins);
 	void __fastcall TFormMain::Transpose(int semitones,bool block,bool song,bool channel,int ins);
+
+	void __fastcall TFormMain::ScaleVolumeArea(int percent,int song,int chn,int row,int width,int height,int ins);
+	void __fastcall TFormMain::ScaleVolume(int percent,bool block,bool song,bool channel,int ins);
 
 	void __fastcall TFormMain::ReplaceInstrumentArea(int song,int chn,int row,int width,int height,int from,int to);
 	void __fastcall TFormMain::ReplaceInstrument(bool block,bool song,bool channel,int from,int to);

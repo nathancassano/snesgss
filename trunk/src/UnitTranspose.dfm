@@ -16,15 +16,15 @@ object FormTranspose: TFormTranspose
   Scaled = False
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 120
+  PixelsPerInch = 96
   TextHeight = 16
-  object SpeedButtonTranspose: TSpeedButton
+  object SpeedButtonOK: TSpeedButton
     Left = 432
     Top = 87
     Width = 73
     Height = 22
-    Caption = 'Transpose'
-    OnClick = SpeedButtonTransposeClick
+    Caption = 'OK'
+    OnClick = SpeedButtonOKClick
   end
   object SpeedButtonCancel: TSpeedButton
     Left = 432
@@ -34,7 +34,7 @@ object FormTranspose: TFormTranspose
     Caption = 'Cancel'
     OnClick = SpeedButtonCancelClick
   end
-  object Label1: TLabel
+  object LabelHint: TLabel
     Left = 240
     Top = 100
     Width = 65
@@ -109,21 +109,21 @@ object FormTranspose: TFormTranspose
       TabOrder = 1
     end
   end
-  object EditTranspose: TEdit
+  object EditValue: TEdit
     Left = 320
     Top = 97
     Width = 40
     Height = 24
     TabOrder = 2
     Text = '0'
-    OnKeyPress = EditTransposeKeyPress
+    OnKeyPress = EditValueKeyPress
   end
-  object UpDownTranspose: TUpDown
+  object UpDownValue: TUpDown
     Left = 360
     Top = 97
     Width = 19
     Height = 24
-    Associate = EditTranspose
+    Associate = EditValue
     Min = -96
     Max = 96
     TabOrder = 3
