@@ -1,5 +1,6 @@
 SNES Game Sound System (or Solution)
 
+v1.21 06.03.14 - volume scale dialog, minor fixes and improvements
 v1.2  26.12.14 - volume column added, Vxx effect removed; Mxy renamed to
                  Vxy, old modules will be converted automatically;
 				 panning support; optional sample loop unrolling for
@@ -239,6 +240,11 @@ function is in sneslib.asm:842, it also uses spc_command_asm routine
 The spc700.asm file in the /snes/ directory is only provided for reference,
 in case you're interested in internals of the driver. It does not need to
 be compiled or otherwise used in a SNES program.
+
+Take a note that, unlike the editor or exported SPC file, driver starts in
+mono mode, for compatibility reasons, as many old TV sets does not have
+stereo, and some part of the sound would be missing. To get stereo output,
+the stereo enable command must be sent first.
 
 
 

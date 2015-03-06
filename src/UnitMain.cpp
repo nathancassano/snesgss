@@ -14,7 +14,7 @@ TFormMain *FormMain;
 
 
 
-#define VERSION_STR				"SNES GSS v1.2"
+#define VERSION_STR				"SNES GSS v1.21"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
@@ -190,6 +190,8 @@ const int PatternColumnOffsets[1+4+1+2+1+11*8]={
 	-1,37,37,37,38,38,39,39,40,41,41,
 	-1
 };
+
+AnsiString ModuleFileName;
 
 
 
@@ -721,7 +723,77 @@ void __fastcall TFormMain::Transpose(int semitones,bool block,bool song,bool cha
 	{
 		if(channel) song=true;
 
-		TransposeArea(semitones,song?SongCur:-1,channel?(ColCur-2)/5:-1,0,channel?1:8,MAX_ROWS,ins);
+		TransposeArea(semitones,song?SongCur:-1,channel?(ColCur-2)/5:0,0,channel?1:8,MAX_ROWS,ins);
+	}
+}
+
+
+
+void __fastcall TFormMain::ScaleVolumeArea(int percent,int song,int chn,int row,int width,int height,int ins)
+{
+	noteFieldStruct *n;
+	int songc,chnc,rowc,ins_cur,vol;
+
+	for(songc=0;songc<MAX_SONGS;++songc)
+	{
+		if(song>=0&&songc!=song) continue;
+
+		for(chnc=chn;chnc<chn+width;++chnc)
+		{
+			ins_cur=-1;
+
+			for(rowc=row;rowc<row+height;++rowc)
+			{
+				n=&songList[songc].row[rowc].chn[chnc];
+
+				if(n->instrument) ins_cur=n->instrument;
+
+				if(n->volume!=255)
+				{
+					if(!ins||(ins_cur==ins))
+					{
+						vol=n->volume;
+
+						vol=vol*percent/100;
+
+						if(vol<0)  vol=0;
+						if(vol>99) vol=99;
+
+						n->volume=vol;
+					}
+				}
+			}
+		}
+	}
+
+	UpdateAll();
+}
+
+
+
+void __fastcall TFormMain::ScaleVolume(int percent,bool block,bool song,bool channel,int ins)
+{
+	int row,col,chn,wdt;
+
+	if(!percent) return;
+
+	if(song||channel||block) SetUndo();
+
+	if(block)
+	{
+		if(SelectionRowS<SelectionRowE) row=SelectionRowS; else row=SelectionRowE;
+		if(SelectionColS<SelectionColE) col=SelectionColS; else col=SelectionColE;
+
+		chn=(col-2)/5;
+		wdt=(col+SelectionWidth-2+4)/5-chn;
+
+		ScaleVolumeArea(percent,SongCur,chn,row,wdt,SelectionHeight,ins);
+	}
+	else
+	{
+		if(channel) song=true;
+
+		ScaleVolumeArea(percent,song?SongCur:-1,channel?(ColCur-2)/5:0,0,channel?1:8,MAX_ROWS,ins);
 	}
 }
 
@@ -772,7 +844,7 @@ void __fastcall TFormMain::ReplaceInstrument(bool block,bool song,bool channel,i
 	{
 		if(channel) song=true;
 
-		ReplaceInstrumentArea(song?SongCur:-1,channel?(ColCur-2)/5:-1,0,channel?1:8,MAX_ROWS,from,to);
+		ReplaceInstrumentArea(song?SongCur:-1,channel?(ColCur-2)/5:0,0,channel?1:8,MAX_ROWS,from,to);
 	}
 }
 
@@ -1677,6 +1749,8 @@ bool __fastcall TFormMain::ModuleOpenFile(AnsiString filename)
 
 	UpdateSampleData=true;
 
+	ModuleFileName=ExtractFileName(filename);
+
 	return true;
 }
 
@@ -2126,7 +2200,7 @@ void __fastcall TFormMain::InsUpdateControls(void)
 
 void __fastcall TFormMain::UpdateInfo(void)
 {
-	Caption=AnsiString(VERSION_STR)+" [Song "+IntToStr(SongCur+1)+": "+songList[SongCur].name+"]";
+	Caption=AnsiString(VERSION_STR)+" ["+ModuleFileName+"] [Song "+IntToStr(SongCur+1)+": "+songList[SongCur].name+"]";
 
 	MOctave->Caption="Octave:"+IntToStr(OctaveCur);
 	MAutostep->Caption="Autostep:"+IntToStr(AutoStep);
@@ -3723,6 +3797,7 @@ void __fastcall TFormMain::SongMoveRowNextMarker(void)
 		++row;
 
 		if(songList[SongCur].row[row].marker) break;
+		if(row==songList[SongCur].length) break;
 	}
 
 	SongMoveCursor(row,ColCur,false);
@@ -3796,7 +3871,7 @@ void __fastcall TFormMain::SongDeleteShiftColumn(int col,int row)
 			n=&songList[SongCur].row[rowc-1].chn[chn];
 			m=&songList[SongCur].row[rowc].chn[chn];
 
-			switch((col-2)&3)
+			switch((col-2)%5)
 			{
 			case 0: n->note      =m->note;       break;
 			case 1: n->instrument=m->instrument; break;
@@ -3873,21 +3948,21 @@ void __fastcall TFormMain::SongInsertShiftColumn(int col,int row)
 
 void __fastcall TFormMain::SongDeleteShift(int col,int row)
 {
-	int chn;
+	int i;
 
 	if(!col) return;
 
 	SetUndo();
 
-	if(col==1)
+	if(col<2)
 	{
 		SongDeleteShiftColumn(col,row);
 	}
 	else
 	{
-		col=((col-2)/5)*5+2;
+		col=2+(col-2)/5*5;
 
-		for(chn=0;chn<5;++chn) SongDeleteShiftColumn(col+chn,row);
+		for(i=0;i<5;++i) SongDeleteShiftColumn(col++,row);
 	}
 
 	SongMoveRowCursor(-1);
@@ -5418,6 +5493,8 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 	InstrumentsCount=0;
 	SPCMusicLargestSize=0;
 
+	ModuleFileName=SaveDialogModule->FileName+"."+SaveDialogModule->DefaultExt;
+	
 	UpdateSampleData=true;
 
 	PrevMouseY=0;
@@ -5425,7 +5502,9 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 	ModuleInit();
 	ModuleClear();
 
-	config_open(CONFIG_NAME);
+	dir=ParamStr(0).SubString(0,ParamStr(0).LastDelimiter("\\/"));
+	
+	config_open((dir+CONFIG_NAME).c_str());
 
 	WaveOutSampleRate =config_read_int("WaveOutSampleRate",44100);
 	WaveOutBufferSize =config_read_int("WaveOutBufferSize",2048);
@@ -6864,17 +6943,20 @@ void __fastcall TFormMain::MImportMidiClick(TObject *Sender)
 
 void __fastcall TFormMain::MTransposeDialogClick(TObject *Sender)
 {
-	int semitones,ins;
+	int ins;
 
+	FormTranspose->Caption="Transpose";
+	FormTranspose->UpDownValue->Min=-96;
+	FormTranspose->UpDownValue->Max= 96;
+	FormTranspose->UpDownValue->Position=0;
+	FormTranspose->LabelHint->Caption="Semitones:";
 	FormTranspose->ShowModal();
 
-	if(!FormTranspose->Transpose) return;
-
-	semitones=FormTranspose->UpDownTranspose->Position;
+	if(!FormTranspose->Confirm) return;
 
 	if(FormTranspose->RadioButtonAllInstruments->Checked) ins=0; else ins=InsCur+1;
 
-	Transpose(semitones,FormTranspose->RadioButtonBlock->Checked,FormTranspose->RadioButtonCurrentSong->Checked,FormTranspose->RadioButtonCurrentChannel->Checked,ins);
+	Transpose(FormTranspose->UpDownValue->Position,FormTranspose->RadioButtonBlock->Checked,FormTranspose->RadioButtonCurrentSong->Checked,FormTranspose->RadioButtonCurrentChannel->Checked,ins);
 }
 //---------------------------------------------------------------------------
 
@@ -7190,6 +7272,25 @@ void __fastcall TFormMain::SpeedButtonLoopUnrollClick(TObject *Sender)
 	InsUpdateControls();
 
 	UpdateSampleData=true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::MSongScaleVolumeClick(TObject *Sender)
+{
+	int ins;
+
+	FormTranspose->Caption="Scale volume";
+	FormTranspose->UpDownValue->Min=0;
+	FormTranspose->UpDownValue->Max=1000;
+	FormTranspose->UpDownValue->Position=100;
+	FormTranspose->LabelHint->Caption="Percents:";
+	FormTranspose->ShowModal();
+
+	if(!FormTranspose->Confirm) return;
+
+	if(FormTranspose->RadioButtonAllInstruments->Checked) ins=0; else ins=InsCur+1;
+
+	ScaleVolume(FormTranspose->UpDownValue->Position,FormTranspose->RadioButtonBlock->Checked,FormTranspose->RadioButtonCurrentSong->Checked,FormTranspose->RadioButtonCurrentChannel->Checked,ins);
 }
 //---------------------------------------------------------------------------
 
