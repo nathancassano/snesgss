@@ -5,6 +5,7 @@
 #include "UnitTranspose.h"
 #include "UnitReplace.h"
 #include "UnitSectionName.h"
+#include "UnitSectionList.h"
 #include "UnitSubSong.h"
 
 //---------------------------------------------------------------------------
@@ -14,7 +15,7 @@ TFormMain *FormMain;
 
 
 
-#define VERSION_STR				"SNES GSS v1.21"
+#define VERSION_STR				"SNES GSS v1.22"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
@@ -3556,7 +3557,15 @@ void __fastcall TFormMain::RenderPattern(void)
 	c=PaintBoxSong->Canvas;
 
 	row2x=PatternGetTopRow2x();
-	rowhl=row2x/2;
+
+	rowhl=0;
+
+	for(row=0;row<row2x/2;++row)
+	{
+		 if(s->row[row].marker) rowhl=0;
+
+		 ++rowhl;
+	}
 
 	x=0;
 	y=0;
@@ -4111,7 +4120,7 @@ void __fastcall TFormMain::SetSectionName(int row,AnsiString name)
 void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 {
 	noteFieldStruct *n;
-	int Key,num;
+	int Key,num,row,cnt;
 	bool Shift,Ctrl,First;
 
 	if(!Active) return;
@@ -4296,6 +4305,46 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 
 				case '0':
 					ToggleChannelMute((ColCur-2)/5,true);
+					Handled=true;
+					return;
+
+				case 'F':
+					FormSectionList->ListBoxSections->Clear();
+
+					for(row=0;row<MAX_ROWS;++row)
+					{
+						if(songList[SongCur].row[row].name!=""||songList[SongCur].row[row].marker)
+						{
+							 FormSectionList->ListBoxSections->Items->Add(Format("%4.4d",ARRAYOFCONST((row)))+": "+songList[SongCur].row[row].name);
+						}
+
+						if(row==RowCur) FormSectionList->ListBoxSections->ItemIndex=FormSectionList->ListBoxSections->Items->Count-1;
+					}
+
+					FormSectionList->ShowModal();
+
+					if(FormSectionList->Selected>=0)
+					{
+						cnt=0;
+
+						for(row=0;row<MAX_ROWS;++row)
+						{
+							if(songList[SongCur].row[row].name!=""||songList[SongCur].row[row].marker)
+							{
+								if(cnt==FormSectionList->Selected)
+								{
+									RowCur=row;
+									break;
+								}
+
+								++cnt;
+							}
+						}
+
+						SongMoveCursor(RowCur,0,false);
+						RenderPattern();
+					}
+
 					Handled=true;
 					return;
 
@@ -4540,6 +4589,8 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 								SetUndo();
 
 								n->effect=Key;
+
+								if(n->value==255) n->value=0;
 
 								//SongMoveCursor(0,1,true);
 								RenderPattern();
