@@ -1,5 +1,6 @@
 SNES Game Sound System (or Solution)
 
+v1.22 30.03.14 - sections list for easier navigation
 v1.21 06.03.14 - volume scale dialog, minor fixes and improvements
 v1.2  26.12.14 - volume column added, Vxx effect removed; Mxy renamed to
                  Vxy, old modules will be converted automatically;
@@ -84,6 +85,7 @@ Delete			Delete a note, a number, or selection without shifting other notes
 Backspace		Delete a note field, shifting everything below and moving the cursor up
 Insert			Insert a blank note field, shifting everything below down
 
+Ctrl+F			Find section, shows list of all named and unnamed sections of the song
 Ctrl+G			Edit current row number, to navigate through the song faster
                 Pressing Enter returns the cursor back to the position where it was originally
 
@@ -103,7 +105,7 @@ Enter			Hold down to play from current row
 Space			Set section break on current row
 Home			Go to previous section
 End				Go to next section
-`               Enter section name, only used for easier navigation
+`               Enter section name, only used for easier navigation (see Ctrl+F)
 
 Ctrl+[ ]		Change measure, each song has its own measure
 

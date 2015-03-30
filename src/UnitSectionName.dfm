@@ -2,9 +2,9 @@ object FormName: TFormName
   Left = 0
   Top = 0
   BorderStyle = bsToolWindow
-  Caption = 'Section name'
+  Caption = 'Change song section name'
   ClientHeight = 25
-  ClientWidth = 299
+  ClientWidth = 294
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -14,7 +14,7 @@ object FormName: TFormName
   OldCreateOrder = False
   Position = poMainFormCenter
   Scaled = False
-  PixelsPerInch = 120
+  PixelsPerInch = 96
   TextHeight = 16
   object EditName: TEdit
     Left = 0

@@ -16,7 +16,7 @@ __fastcall TFormName::TFormName(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TFormName::EditNameKeyPress(TObject *Sender, char &Key)
 {
-	if(Key==VK_RETURN)
+	if(Key==VK_RETURN||Key==VK_ESCAPE)
 	{
 		Key=0;
 		Close();
