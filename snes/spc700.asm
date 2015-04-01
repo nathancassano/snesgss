@@ -194,7 +194,7 @@ editorInit:
 
 
 mainLoopInit:
-
+	
 	lda #8000/{UPDATE_RATE_HZ}
 	sta {T0TG}
 	lda #$81				//enable timer 0 and IPL
@@ -1313,7 +1313,7 @@ initDSPAndVars:
 	stx {D_STEREO}				//mono by default
 	stx {D_MUSIC_CHNS}			//how many channels current music uses
 	stx {D_PAUSE}				//pause mode is inactive
-	stx {S_ENABLE}				//disble streaming
+	stx {S_ENABLE}				//disable streaming
 	stx {D_GLOBAL_DIV}			//reset global volume change speed divider
 
 	stx {D_GLOBAL_OUT}			//current global volume
@@ -1722,11 +1722,11 @@ updateGlobalVolume:
 	sta {D_GLOBAL_OUT}
 	lsr
 
-	ldx #{DSP_EVOLL}
+	ldx #{DSP_MVOLL}
 	stx {ADDR}
 	sta {DATA}
 
-	ldx #{DSP_EVOLR}
+	ldx #{DSP_MVOLR}
 	stx {ADDR}
 	sta {DATA}
 
@@ -1947,7 +1947,7 @@ streamBufferPtr:
 
 DSPInitData:
 	db {DSP_FLG}  ,%01100000				//mute, disable echo
-	db {DSP_MVOLL},0						//global volume to zero, echo volume used as global instead
+	db {DSP_MVOLL},0						//global volume to zero
 	db {DSP_MVOLR},0
 	db {DSP_PMON} ,0						//no pitch modulation
 	db {DSP_NON}  ,0						//no noise
@@ -1962,12 +1962,12 @@ DSPInitData:
 	db {DSP_C5}	  ,0
 	db {DSP_C6}	  ,0
 	db {DSP_C7}	  ,0
-	db {DSP_EON}  ,255						//echo enabled
-	db {DSP_EVOLL},0						//echo (as global) volume to zero, it gets to the max after init
+	db {DSP_EON}  ,0						//echo disabled
+	db {DSP_EVOLL},0						//echo volume to zero
 	db {DSP_EVOLR},0
 	db {DSP_KOF}  ,255						//all keys off
 	db {DSP_DIR}  ,sampleDirAddr/256		//sample dir location
-	db {DSP_FLG}  ,%00000000				//no mute, enable echo
+	db {DSP_FLG}  ,%00100000				//no mute, disable echo
 	db 0
 
 

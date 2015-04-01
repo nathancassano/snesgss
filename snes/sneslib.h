@@ -209,7 +209,15 @@
 #define SCMD_STREAM_STOP		0x0c	/*stop streaming*/
 #define SCMD_STREAM_SEND		0x0d	/*send BRR block*/
 
+/*control scheme variables */
 
+static unsigned int STRAFE_RIGHT_BUTTON;
+static unsigned int STRAFE_LEFT_BUTTON;
+static unsigned int MISSILE_BUTTON;
+static unsigned int GUN_BUTTON;
+static unsigned int FLARE_BUTTON;
+
+static unsigned int MOBILE_CONTROLS;
 
 /*variables for basic hardware abstract layer*/
 
@@ -243,8 +251,6 @@ static unsigned int spc_stream_block_size;
 static unsigned int spc_stream_block_repeat;
 static unsigned int spc_stream_enable;
 static unsigned int spc_stream_stop_flag;
-
-
 
 /*hardware multiplication 8 by 8 bits*/
 
@@ -773,7 +779,6 @@ void spc_channel_volume(unsigned int channels,unsigned int volume);
 
 void spc_init(void)
 {
-	const unsigned int header_size=2;
 	static unsigned int i,size;
 
 	size=spc700_code_1[0]+(spc700_code_1[1]<<8);
@@ -784,21 +789,20 @@ void spc_init(void)
 
 	nmi_enable(FALSE);
 
-	if(size<32768-header_size)
+	if(size<32766)
 	{
-		spc_load_data(0x0200,size,spc700_code_1+header_size);
+		spc_load_data(0x0200,size,spc700_code_1+2);
 	}
 	else
 	{
-		spc_load_data(0x0200,32768-header_size,spc700_code_1+header_size);
+		spc_load_data(0x0200,32766,spc700_code_1+2);
 		spc_command(SCMD_LOAD,0);
-		spc_load_data(0x0200+32768-header_size,size-(32768-header_size),spc700_code_2);
+		spc_load_data(0x81fe,size-32766,spc700_code_2);
 	}
 
 	spc_command(SCMD_INITIALIZE,0);
-
+	
 	nmi_enable(TRUE);
-	nmi_wait();
 }
 
 /*play sound effect*/
@@ -813,10 +817,14 @@ void music_play(const unsigned char *data)
 
 	size=data[0]+(data[1]<<8);
 
+	nmi_enable(FALSE);
+	
 	spc_command(SCMD_MUSIC_STOP,0);
 	spc_command(SCMD_LOAD,0);
 	spc_load_data(spc_music_load_adr,size,data+2);
 	spc_command(SCMD_MUSIC_PLAY,0);
+	
+	nmi_enable(TRUE);
 }
 
 /*get channel count*/

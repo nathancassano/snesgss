@@ -1,5 +1,7 @@
 SNES Game Sound System (or Solution)
 
+v1.23 01.04.14 - SPC700 driver fix to remove noise burst on initialize
+				 heard on the real HW and latest snes9x versions
 v1.22 30.03.14 - sections list for easier navigation
 v1.21 06.03.14 - volume scale dialog, minor fixes and improvements
 v1.2  26.12.14 - volume column added, Vxx effect removed; Mxy renamed to
