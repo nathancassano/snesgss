@@ -18,8 +18,8 @@
 #include <stdio.h>
 //---------------------------------------------------------------------------
 
-#define MAX_INSTRUMENTS		100
-#define MAX_SONGS			100
+#define MAX_INSTRUMENTS		99
+#define MAX_SONGS			99
 #define MAX_ROWS			10000
 
 #define DEFAULT_PAGE_ROWS	16
@@ -239,6 +239,11 @@ class TFormMain : public TForm
 	TOpenDialog *OpenDialogImportFTM;
 	TSpeedButton *SpeedButtonLoopUnroll;
 	TMenuItem *MSongScaleVolume;
+	TMenuItem *N8;
+	TMenuItem *N9;
+	TMenuItem *MOutputMonitor;
+	TTimer *TimerOutputMonitor;
+	TLabel *Label8;
 	void __fastcall FormCreate(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall MExitClick(TObject *Sender);
@@ -332,6 +337,8 @@ class TFormMain : public TForm
 	void __fastcall MImportFamiTrackerClick(TObject *Sender);
 	void __fastcall SpeedButtonLoopUnrollClick(TObject *Sender);
 	void __fastcall MSongScaleVolumeClick(TObject *Sender);
+	void __fastcall MOutputMonitorClick(TObject *Sender);
+	void __fastcall TimerOutputMonitorTimer(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TFormMain(TComponent* Owner);

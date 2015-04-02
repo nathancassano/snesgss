@@ -7,6 +7,7 @@
 #include "UnitSectionName.h"
 #include "UnitSectionList.h"
 #include "UnitSubSong.h"
+#include "UnitOutputMonitor.h"
 
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -15,7 +16,7 @@ TFormMain *FormMain;
 
 
 
-#define VERSION_STR				"SNES GSS v1.22"
+#define VERSION_STR				"SNES GSS v1.3"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
@@ -46,9 +47,12 @@ void handle_gme_error(gme_err_t error)
 	}
 }
 
+#include "tuner.h"
 #include "waveout.h"
 #include "config.h"
 #include "3band_eq.h"
+
+
 
 instrumentStruct insList[MAX_INSTRUMENTS];
 
@@ -2357,7 +2361,7 @@ void __fastcall TFormMain::RenderADSR(void)
 				}
 			}
 
-			if(off>=insList[InsCur].length)//draw loop end line, wrap up the waveform
+			if(off>=insList[InsCur].length||off>=insList[InsCur].source_length||(insList[InsCur].loop_enable&&off>=insList[InsCur].loop_end))//draw loop end line, wrap up the waveform
 			{
 				if(insList[InsCur].loop_enable) off=insList[InsCur].loop_start; else off=insList[InsCur].length;
 
@@ -3476,6 +3480,9 @@ void __fastcall TFormMain::RenderPatternColor(TCanvas *c,int row,int col,TColor 
 
 void __fastcall TFormMain::CenterView(void)
 {
+	if(RowCur<0) RowCur=0;
+	if(RowCur>=MAX_ROWS) RowCur=MAX_ROWS-1;
+
 	RowView=RowCur;
 }
 
@@ -3910,7 +3917,7 @@ void __fastcall TFormMain::SongInsertShiftColumn(int col,int row)
 	noteFieldStruct *n,*m;
 	int rowc,chn;
 
-	if(!col) return;
+	if(!col||row>=MAX_ROWS) return;
 
 	if(col==1)
 	{
@@ -4123,7 +4130,7 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 	int Key,num,row,cnt;
 	bool Shift,Ctrl,First;
 
-	if(!Active) return;
+	if(!Active&&!FormOutputMonitor->Active) return;
 
 	if(Msg.message==WM_KEYUP)
 	{
@@ -5609,6 +5616,7 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 		}
 	}
 
+	tuner_init();
 	waveout_init(Handle,WaveOutSampleRate,WaveOutBufferSize,WaveOutBufferCount);
 }
 //---------------------------------------------------------------------------
@@ -5618,6 +5626,7 @@ void __fastcall TFormMain::FormClose(TObject *Sender, TCloseAction &Action)
 	int i;
 
 	waveout_shut();
+	tuner_shut();
 
 	SPCStop();
 
@@ -6444,7 +6453,7 @@ void __fastcall TFormMain::MImportSPCBankClick(TObject *Sender)
 		insList[ins].source_length=rd_dword_lh(&smph[0]);
 		insList[ins].length       =rd_dword_lh(&smph[4]);
 		insList[ins].loop_start   =rd_dword_lh(&smph[8]);
-		insList[ins].loop_end     =insList[ins].length;
+		insList[ins].loop_end     =insList[ins].length-1;
 		insList[ins].source_rate  =rd_word_lh(&smph[12]);
 		insList[ins].env_ar       =smph[14];
 		insList[ins].env_dr       =smph[15];
@@ -7342,6 +7351,66 @@ void __fastcall TFormMain::MSongScaleVolumeClick(TObject *Sender)
 	if(FormTranspose->RadioButtonAllInstruments->Checked) ins=0; else ins=InsCur+1;
 
 	ScaleVolume(FormTranspose->UpDownValue->Position,FormTranspose->RadioButtonBlock->Checked,FormTranspose->RadioButtonCurrentSong->Checked,FormTranspose->RadioButtonCurrentChannel->Checked,ins);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::MOutputMonitorClick(TObject *Sender)
+{
+	if(FormOutputMonitor->Visible) FormOutputMonitor->Hide(); else FormOutputMonitor->Show();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::TimerOutputMonitorTimer(TObject *Sender)
+{
+	AnsiString str;
+	const char *note;
+	int cents;
+
+	tuner_set_active(FormOutputMonitor->Visible);
+
+	note =tuner_get_note_name();
+	cents=tuner_get_detune();
+
+	if(note)
+	{
+		FormOutputMonitor->LabelNote ->Caption=AnsiString(note);
+
+		if(cents>0) str="+"; else str="";
+
+		FormOutputMonitor->LabelCents->Caption=str+IntToStr(cents)+" cents";
+	}
+	else
+	{
+		FormOutputMonitor->LabelNote ->Caption="---";
+		FormOutputMonitor->LabelCents->Caption="";
+    }
+
+	FormOutputMonitor->OutL=WSTREAMER.peakL;
+	FormOutputMonitor->OutR=WSTREAMER.peakR;
+
+	if(FormOutputMonitor->OutL>FormOutputMonitor->PeakL)
+	{
+		FormOutputMonitor->PeakL=FormOutputMonitor->OutL;
+	}
+	else
+	{
+		FormOutputMonitor->PeakL-=512;
+
+		if(FormOutputMonitor->PeakL<0) FormOutputMonitor->PeakL=0;
+	}
+
+	if(FormOutputMonitor->OutR>FormOutputMonitor->PeakR)
+	{
+		FormOutputMonitor->PeakR=FormOutputMonitor->OutR;
+	}
+	else
+	{
+		FormOutputMonitor->PeakR-=512;
+
+		if(FormOutputMonitor->PeakR<0) FormOutputMonitor->PeakR=0;
+	}
+
+	FormOutputMonitor->Repaint();
 }
 //---------------------------------------------------------------------------
 

@@ -19,6 +19,9 @@ struct {
 	int lastOutputL;
 	int lastOutputR;
 	bool render;
+	short buffer[1024*4];
+	int peakL;
+	int peakR;
 } WSTREAMER;
 
 
@@ -74,6 +77,7 @@ inline void mixer_render(short int *wave,int size)
 
 					if(WSTREAMER.lastOutputR<0) WSTREAMER.lastOutputR=0;
 				}
+
 				wave[i+0]=WSTREAMER.lastOutputL;
 				wave[i+1]=WSTREAMER.lastOutputR;
 			}
@@ -184,13 +188,31 @@ static void CALLBACK mixer_callback(HWAVEOUT hWaveOut,UINT uMsg,DWORD dwInstance
 void waveout_update_thread(void*)
 {
 	short buffer[1024];
-	
+	int i,l,r;
+
 	while(!WSTREAMER.threadStop)
 	{
-		mixer_render(buffer,1024);
-		mixer_write(WSTREAMER.device,(LPSTR)buffer,2048);
+		mixer_render(buffer,1024);//samples*stereo
+		mixer_write(WSTREAMER.device,(LPSTR)buffer,1024*2);//bytes
+
+		WSTREAMER.peakL=0;
+		WSTREAMER.peakR=0;
+
+		for(i=0;i<1024;i+=2)
+		{
+			 l=abs(buffer[i+0]);
+			 r=abs(buffer[i+1]);
+
+			 if(l>WSTREAMER.peakL) WSTREAMER.peakL=l;
+			 if(r>WSTREAMER.peakR) WSTREAMER.peakR=r;
+		}
+
+		memcpy(WSTREAMER.buffer,&WSTREAMER.buffer[1024],1024*3*sizeof(short));
+		memcpy(&WSTREAMER.buffer[1024*3],buffer,1024*sizeof(short));
+
+		tuner_analyze(WSTREAMER.buffer,44100,1024*4);//samples*stereo
 	}
-	
+
 	WSTREAMER.threadStop=2;
 }
 
@@ -208,7 +230,9 @@ bool waveout_init(HWND sWnd,int mrate,int bsize,int bcount)
 	WSTREAMER.lastOutputL=0;
 	WSTREAMER.lastOutputR=0;
 	WSTREAMER.render=false;
-	
+
+	memset(WSTREAMER.buffer,0,sizeof(WSTREAMER.buffer));
+
 	InitializeCriticalSection(&WSTREAMER.csection);
 	
 	wfx.nSamplesPerSec=WSTREAMER.rate;

@@ -2,7 +2,7 @@ object FormMain: TFormMain
   Left = 0
   Top = 0
   Caption = 'SNES GSS'
-  ClientHeight = 715
+  ClientHeight = 675
   ClientWidth = 982
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -93,7 +93,7 @@ object FormMain: TFormMain
     Left = 0
     Top = 0
     Width = 982
-    Height = 715
+    Height = 675
     ActivePage = TabSheetSong
     Align = alClient
     TabOrder = 0
@@ -104,7 +104,7 @@ object FormMain: TFormMain
         Left = 0
         Top = 0
         Width = 974
-        Height = 684
+        Height = 644
         Align = alClient
         OnDblClick = PaintBoxSongDblClick
         OnMouseDown = PaintBoxSongMouseDown
@@ -124,7 +124,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 663
       object SpeedButtonSongUp: TSpeedButton
         Left = 359
         Top = 24
@@ -210,7 +210,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 663
       object SpeedButtonImportWav: TSpeedButton
         Left = 514
         Top = 258
@@ -819,7 +819,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 663
       object GroupBoxMemoryUse: TGroupBox
         Left = 3
         Top = 3
@@ -839,15 +839,15 @@ object FormMain: TFormMain
         Left = 3
         Top = 258
         Width = 382
-        Height = 151
+        Height = 167
         Caption = 'About'
         TabOrder = 1
         object Label4: TLabel
           Left = 16
           Top = 25
-          Width = 197
+          Width = 216
           Height = 16
-          Caption = 'Copyright '#169' Bubble Zap, LLC 2014'
+          Caption = 'Copyright '#169' Bubble Zap, LLC 2014-15'
         end
         object Label1: TLabel
           Left = 16
@@ -876,6 +876,13 @@ object FormMain: TFormMain
           Width = 175
           Height = 16
           Caption = 'Uses 3 Band EQ code by Neil C'
+        end
+        object Label8: TLabel
+          Left = 16
+          Top = 134
+          Width = 259
+          Height = 16
+          Caption = 'Uses 5KTuner algorithm by John Montgomery'
         end
       end
     end
@@ -1001,6 +1008,9 @@ object FormMain: TFormMain
       Caption = 'Stop [F8]'
       OnClick = MSongStopClick
     end
+    object N8: TMenuItem
+      Caption = '|'
+    end
     object MOctave: TMenuItem
       Caption = 'Octave'
       object MOctave1: TMenuItem
@@ -1047,6 +1057,13 @@ object FormMain: TFormMain
     object MAutostep: TMenuItem
       Caption = 'Autostep'
       OnClick = MAutostepClick
+    end
+    object N9: TMenuItem
+      Caption = '|'
+    end
+    object MOutputMonitor: TMenuItem
+      Caption = 'Output monitor'
+      OnClick = MOutputMonitorClick
     end
   end
   object OpenDialogModule: TOpenDialog
@@ -1160,5 +1177,11 @@ object FormMain: TFormMain
     Title = 'Import FamiTracker text'
     Left = 592
     Top = 424
+  end
+  object TimerOutputMonitor: TTimer
+    Interval = 25
+    OnTimer = TimerOutputMonitorTimer
+    Left = 432
+    Top = 488
   end
 end
