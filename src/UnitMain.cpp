@@ -16,7 +16,7 @@ TFormMain *FormMain;
 
 
 
-#define VERSION_STR				"SNES GSS v1.3"
+#define VERSION_STR				"SNES GSS v1.31"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
@@ -25,6 +25,7 @@ TFormMain *FormMain;
 #define EX_VOL_SIGNATURE		"[EX VOL]"
 
 #define UPDATE_RATE_HZ			160
+#define DEFAULT_SPEED			(UPDATE_RATE_HZ/(120*(1.0/60.0)*4)) //default speed for 120 BPM
 
 #define ENABLE_SONG_COMPRESSION
 
@@ -921,6 +922,8 @@ void __fastcall TFormMain::SetUndo(void)
 	UndoBuffer.rowCur=RowCur;
 	UndoBuffer.colCur=ColCur;
 	UndoBuffer.available=true;
+
+	UpdateInfo(true);
 }
 
 
@@ -1262,7 +1265,7 @@ void __fastcall TFormMain::ModuleClear(void)
 
 	for(i=0;i<8;++i) ChannelMute[i]=false;
 
-	UpdateInfo();
+	UpdateInfo(false);
 }
 
 
@@ -1304,6 +1307,32 @@ void __fastcall TFormMain::SongClear(int song)
 	SelectionHeight=0;
 
 	CenterView();
+	UpdateInfo(false);
+}
+
+
+
+int __fastcall TFormMain::SongCalculateDuration(int song)
+{
+	int row,n,length,speed,duration;
+
+	length=SongFindLastRow(&songList[song]);
+
+	duration=0;
+	speed=DEFAULT_SPEED;
+
+	for(row=0;row<length;++row)
+	{
+		if(songList[song].row[row].speed) speed=songList[song].row[row].speed;
+
+		duration+=speed;
+	}
+
+	if(!duration) return 0;
+
+	if(duration<UPDATE_RATE_HZ) return 1;
+
+	return duration/UPDATE_RATE_HZ;
 }
 
 
@@ -1768,7 +1797,7 @@ void __fastcall TFormMain::UpdateAll(void)
 	SongUpdateControls();
 	SongListUpdate();
 	RenderPattern();
-	UpdateInfo();
+	UpdateInfo(false);
 
 	if(PageControlMode->ActivePage==TabSheetInfo) TabSheetInfoShow(this);
 }
@@ -2203,10 +2232,19 @@ void __fastcall TFormMain::InsUpdateControls(void)
 
 
 
-void __fastcall TFormMain::UpdateInfo(void)
+void __fastcall TFormMain::UpdateInfo(bool header_only)
 {
-	Caption=AnsiString(VERSION_STR)+" ["+ModuleFileName+"] [Song "+IntToStr(SongCur+1)+": "+songList[SongCur].name+"]";
+	int duration;
+	AnsiString dstr;
 
+	duration=SongCalculateDuration(SongCur);
+
+	dstr=IntToStr(duration/60)+"m"+Format("%2.2ds",ARRAYOFCONST((duration%60)));
+
+	Caption=AnsiString(VERSION_STR)+" ["+ModuleFileName+"] [Song "+IntToStr(SongCur+1)+": "+songList[SongCur].name+"] ["+dstr+"]";
+
+	if(header_only) return;
+	
 	MOctave->Caption="Octave:"+IntToStr(OctaveCur);
 	MAutostep->Caption="Autostep:"+IntToStr(AutoStep);
 
@@ -2241,13 +2279,13 @@ void __fastcall TFormMain::SongChange(int song)
 
 	SongUpdateControls();
 	SongListUpdate();
-	UpdateInfo();
-
 	ResetUndo();
 
 	RenderPattern();
 
 	if(PageControlMode->ActivePage==TabSheetInfo) TabSheetInfoShow(this);
+
+	UpdateInfo(true);
 }
 
 
@@ -2529,7 +2567,7 @@ int __fastcall TFormMain::SongFindLastRow(songStruct *s)
 		if(!SongIsRowEmpty(s,row,false)) return row;
 	}
 
-	return MAX_ROWS-1;
+	return 0;
 }
 
 
@@ -4221,14 +4259,14 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 			case VK_DIVIDE:
 				--OctaveCur;
 				if(OctaveCur<1) OctaveCur=8;
-				UpdateInfo();
+				UpdateInfo(false);
 				Handled=true;
 				return;
 
 			case VK_MULTIPLY:
 				++OctaveCur;
 				if(OctaveCur>8) OctaveCur=1;
-				UpdateInfo();
+				UpdateInfo(false);
 				Handled=true;
 				return;
 
@@ -4241,7 +4279,7 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 			case VK_NUMPAD7:
 			case VK_NUMPAD8:
 				OctaveCur=Key-VK_NUMPAD1+1;
-				UpdateInfo();
+				UpdateInfo(false);
 				Handled=true;
 				return;
 			}
@@ -4758,14 +4796,14 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 				case VK_OEM_4:
 					--AutoStep;
 					if(AutoStep<0) AutoStep=16;
-					UpdateInfo();
+					UpdateInfo(false);
 					Handled=true;
 					return;
 
 				case VK_OEM_6:
 					++AutoStep;
 					if(AutoStep>16) AutoStep=0;
-					UpdateInfo();
+					UpdateInfo(false);
 					Handled=true;
 					return;
 
@@ -5583,7 +5621,6 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 	InsListUpdate();
 	SongListUpdate();
 	SongUpdateControls();
-	UpdateInfo();
 
 	ResetCopyBuffer();
 
@@ -5615,6 +5652,8 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 			exit(0);
 		}
 	}
+
+	UpdateInfo(false);
 
 	tuner_init();
 	waveout_init(Handle,WaveOutSampleRate,WaveOutBufferSize,WaveOutBufferCount);
@@ -6295,7 +6334,7 @@ void __fastcall TFormMain::MAutostepClick(TObject *Sender)
 
 	if(AutoStep>16) AutoStep=0;
 
-	UpdateInfo();
+	UpdateInfo(false);
 }
 //---------------------------------------------------------------------------
 
@@ -6304,6 +6343,7 @@ void __fastcall TFormMain::EditSongNameChange(TObject *Sender)
 	songList[SongCur].name=EditSongName->Text;
 
 	SongListUpdate();
+	UpdateInfo(true);
 }
 //---------------------------------------------------------------------------
 
@@ -6422,7 +6462,7 @@ void __fastcall TFormMain::MOctave1Click(TObject *Sender)
 {
 	OctaveCur=((TMenuItem*)Sender)->Tag;
 
-	UpdateInfo();
+	UpdateInfo(false);
 }
 //---------------------------------------------------------------------------
 
@@ -6820,7 +6860,7 @@ void __fastcall TFormMain::MImportMidiClick(TObject *Sender)
 
 	s=&songList[SongCur];
 
-	s->row[0].speed=UPDATE_RATE_HZ/(120*(1.0/60.0)*4);//default speed for 120 BPM
+	s->row[0].speed=DEFAULT_SPEED;
 
 	tracks  =rd_word_hl(midi+10);
 	division=rd_word_hl(midi+12);
@@ -7054,8 +7094,6 @@ void __fastcall TFormMain::MExportAndSaveClick(TObject *Sender)
 	ModuleSave(SaveDialogModule->FileName);
 
 	dir=ExtractFilePath(SaveDialogModule->FileName);
-
-	Caption=dir;
 
 	if(!ExportAll(dir)) Application->MessageBox("Some export error","Error",MB_OK);
 }

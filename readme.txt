@@ -1,5 +1,6 @@
 SNES Game Sound System (or Solution)
 
+v1.31 03.04.14 - song duration estimate, displayed in the window header
 v1.3  02.04.14 - Output monitor and built-in tuner; minor fixes
 v1.23 01.04.14 - SPC700 driver fix to remove noise burst on initialize
 				 heard on the real HW and latest snes9x versions
