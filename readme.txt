@@ -1,5 +1,7 @@
 SNES Game Sound System (or Solution)
 
+v1.4  24.05.14 - paste over; shifting markers and labels in multichannel
+                 Expand/Shrink; MIDI input support
 v1.31 03.04.14 - song duration estimate, displayed in the window header
 v1.3  02.04.14 - Output monitor and built-in tuner; minor fixes
 v1.23 01.04.14 - SPC700 driver fix to remove noise burst on initialize
@@ -130,6 +132,7 @@ Shift+X			Cur selection and shift the rows below up
 Ctrl+C			Copy selection
 Ctrl+V			Paste selection
 Shift+V			Paste selection and shift existing rows down
+Ctrl+B			Paste selection over existing content
 
 Ctrl+F1			Transpose selection semitone down
 Ctrl+F2			Transpose selection semitone up

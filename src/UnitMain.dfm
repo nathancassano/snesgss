@@ -2,7 +2,7 @@ object FormMain: TFormMain
   Left = 0
   Top = 0
   Caption = 'SNES GSS'
-  ClientHeight = 675
+  ClientHeight = 696
   ClientWidth = 982
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -93,7 +93,7 @@ object FormMain: TFormMain
     Left = 0
     Top = 0
     Width = 982
-    Height = 675
+    Height = 696
     ActivePage = TabSheetSong
     Align = alClient
     TabOrder = 0
@@ -104,7 +104,7 @@ object FormMain: TFormMain
         Left = 0
         Top = 0
         Width = 974
-        Height = 644
+        Height = 665
         Align = alClient
         OnDblClick = PaintBoxSongDblClick
         OnMouseDown = PaintBoxSongMouseDown
@@ -124,7 +124,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 663
+      ExplicitHeight = 644
       object SpeedButtonSongUp: TSpeedButton
         Left = 359
         Top = 24
@@ -210,7 +210,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 663
+      ExplicitHeight = 644
       object SpeedButtonImportWav: TSpeedButton
         Left = 514
         Top = 258
@@ -819,7 +819,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 663
+      ExplicitHeight = 644
       object GroupBoxMemoryUse: TGroupBox
         Left = 3
         Top = 3

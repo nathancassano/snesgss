@@ -1,8 +1,3 @@
-#include <mmsystem.h>
-
-
-
-
 struct {
 	CRITICAL_SECTION csection;
 	WAVEHDR* wblocks;

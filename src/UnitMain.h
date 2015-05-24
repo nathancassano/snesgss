@@ -15,7 +15,10 @@
 #include <FileCtrl.hpp>
 
 #include <vcl.h>
+#include <windows.h>
+#include <mmsystem.h>
 #include <stdio.h>
+
 //---------------------------------------------------------------------------
 
 #define MAX_INSTRUMENTS		99
@@ -410,7 +413,8 @@ public:		// User declarations
 
 	void __fastcall TFormMain::ToggleChannelMute(int chn,bool solo);
 
-	void __fastcall TFormMain::UpdateInfo(void);
+	void __fastcall TFormMain::UpdateInfo(bool header_only);
+	void __fastcall TFormMain::SongDataClear(int song);
 	void __fastcall TFormMain::SongClear(int song);
 
 	void __fastcall TFormMain::SongMoveRowPrevMarker(void);
@@ -431,7 +435,7 @@ public:		// User declarations
 
 	void __fastcall TFormMain::ResetCopyBuffer(void);
 	void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift);
-	void __fastcall TFormMain::PasteFromBuffer(bool shift);
+	void __fastcall TFormMain::PasteFromBuffer(bool shift,bool mix);
 
 	void __fastcall TFormMain::TransposeArea(int semitones,int song,int chn,int row,int width,int height,int ins);
 	void __fastcall TFormMain::Transpose(int semitones,bool block,bool song,bool channel,int ins);
@@ -460,11 +464,18 @@ public:		// User declarations
 	AnsiString __fastcall TFormMain::GetSectionName(int row);
 	void __fastcall TFormMain::SetSectionName(int row,AnsiString name);
 
+	int __fastcall TFormMain::SongCalculateDuration(int song);
+
+	void __fastcall TFormMain::EnterNoteKey(int note);
+
 	int WaveOutSampleRate;
 	int WaveOutBufferSize;
 	int WaveOutBufferCount;
 
 	int InsCur;
+
+	HMIDIIN MidiHandle;
+	unsigned char MidiKeyState[128];
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TFormMain *FormMain;
