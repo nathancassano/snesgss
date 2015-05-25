@@ -247,6 +247,8 @@ class TFormMain : public TForm
 	TMenuItem *MOutputMonitor;
 	TTimer *TimerOutputMonitor;
 	TLabel *Label8;
+	TMenuItem *MNew;
+	TMenuItem *N10;
 	void __fastcall FormCreate(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall MExitClick(TObject *Sender);
@@ -342,6 +344,9 @@ class TFormMain : public TForm
 	void __fastcall MSongScaleVolumeClick(TObject *Sender);
 	void __fastcall MOutputMonitorClick(TObject *Sender);
 	void __fastcall TimerOutputMonitorTimer(TObject *Sender);
+	void __fastcall EditSongNameKeyPress(TObject *Sender, char &Key);
+	void __fastcall MNewClick(TObject *Sender);
+	void __fastcall EditInsNameKeyPress(TObject *Sender, char &Key);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TFormMain(TComponent* Owner);

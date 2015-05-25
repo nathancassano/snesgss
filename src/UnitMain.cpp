@@ -16,7 +16,7 @@ TFormMain *FormMain;
 
 
 
-#define VERSION_STR				"SNES GSS v1.4"
+#define VERSION_STR				"SNES GSS v1.41"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
@@ -5709,7 +5709,7 @@ __fastcall TFormMain::TFormMain(TComponent* Owner)
 void __fastcall TFormMain::FormCreate(TObject *Sender)
 {
 	AnsiString dir;
-	int i;
+	int i,midi_id,midi_all;
 
 	for(i=0;i<this->ComponentCount;i++)
 	{
@@ -5753,6 +5753,8 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 	WaveOutSampleRate =config_read_int("WaveOutSampleRate",44100);
 	WaveOutBufferSize =config_read_int("WaveOutBufferSize",2048);
 	WaveOutBufferCount=config_read_int("WaveOutBufferCount",8);
+
+	midi_id=config_read_int("MidiInputDeviceID",0);
 
 	PageStep=config_read_int("SongPageStep",DEFAULT_PAGE_ROWS);
 	AutoStep=config_read_int("SongAutoStep",1);
@@ -5808,9 +5810,11 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 
 	MidiHandle=NULL;
 
-	if(midiInGetNumDevs()>0)
+	midi_all=midiInGetNumDevs();
+
+	if(midi_all>0&&midi_id<midi_all)
 	{
-		if(midiInOpen(&MidiHandle,0,(DWORD)Handle,NULL,CALLBACK_WINDOW)==MMSYSERR_NOERROR)
+		if(midiInOpen(&MidiHandle,midi_id,(DWORD)Handle,NULL,CALLBACK_WINDOW)==MMSYSERR_NOERROR)
 		{
 			memset(MidiKeyState,0,sizeof(MidiKeyState));
 
@@ -6526,6 +6530,8 @@ void __fastcall TFormMain::CheckBoxEffectClick(TObject *Sender)
 	songList[SongCur].effect=CheckBoxEffect->Checked;
 
 	SongListUpdate();
+
+	if(TabSheetSongList->Visible) ListBoxSong->SetFocus();
 }
 //---------------------------------------------------------------------------
 
@@ -7292,11 +7298,13 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 	const char export_id[]="# FamiTracker text export";
 	FILE *file;
 	char *text;
-	int c,chn,pos,ptr,ptn,val,sub,note,srow,drow,size,order_len,pattern_len,loop_pos;
-	bool cut;
+	int c,chn,pos,ptr,ptn,val,sub,note,vol,srow,drow,size,order_len,pattern_len,loop_pos;
+	bool cut,sfx;
+	AnsiString temp;
 
 	struct rowStruct {
-		unsigned char chn[5];
+		unsigned char chn_note[5];
+		unsigned char chn_vol[5];
 		unsigned char speed;
 	};
 
@@ -7470,6 +7478,11 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 					note=note+(text[ptr+4]-'0')*12;
 				}
 
+				vol=0;
+				
+				if(text[ptr+9]>='0'&&text[ptr+9]<='9') vol=text[ptr+9]-'0';
+				if(text[ptr+9]>='A'&&text[ptr+9]<='F') vol=text[ptr+9]-'A'+10;
+				
 				val=(gss_hex_to_byte(text[ptr+12])<<4)+gss_hex_to_byte(text[ptr+13]);
 
 				switch(text[ptr+11])
@@ -7480,7 +7493,8 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 				case 'F': row->speed=160*val/60; break;
 				}
 
-				row->chn[chn]=note;
+				row->chn_note[chn]=note;
+				row->chn_vol [chn]=vol;
 
 				ptr+=15;
 			}
@@ -7495,7 +7509,13 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 
 	//convert
 
+	temp=songList[SongCur].name;
+	sfx=songList[SongCur].effect;
+
 	SongClear(SongCur);
+
+	songList[SongCur].name=temp;
+	songList[SongCur].effect=sfx;
 
 	drow=0;
 
@@ -7513,7 +7533,9 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 
 				if(row->speed) songList[SongCur].row[drow].speed=row->speed;
 
-				songList[SongCur].row[drow].chn[chn].note=row->chn[chn];
+				songList[SongCur].row[drow].chn[chn].note=row->chn_note[chn];
+
+				if(row->chn_vol[chn]) songList[SongCur].row[drow].chn[chn].volume=row->chn_vol[chn]*99/15;
 			}
 
 			++drow;
@@ -7615,6 +7637,41 @@ void __fastcall TFormMain::TimerOutputMonitorTimer(TObject *Sender)
 	}
 
 	FormOutputMonitor->Repaint();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::EditSongNameKeyPress(TObject *Sender, char &Key)
+{
+	if(Key==VK_RETURN)
+	{
+		if(TabSheetSongList->Visible) ListBoxSong->SetFocus();
+
+		Key=0;
+	}
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::MNewClick(TObject *Sender)
+{
+	if(Application->MessageBox("All current data wiil be lost. Are you sure you want to start a new project?","Confirm",MB_YESNO)!=ID_YES) return;
+
+	ModuleInit();
+	ModuleClear();
+
+	SPCCompile(&songList[0],0,false,false,-1);
+	CompileAllSongs();
+	UpdateAll();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::EditInsNameKeyPress(TObject *Sender, char &Key)
+{
+	if(Key==VK_RETURN)
+	{
+		if(TabSheetInstruments->Visible) ListBoxIns->SetFocus();
+
+		Key=0;
+	}
 }
 //---------------------------------------------------------------------------
 

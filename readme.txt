@@ -1,5 +1,6 @@
 SNES Game Sound System (or Solution)
 
+v1.41 25.05.14 - MIDI input device can be changed in the config file
 v1.4  24.05.14 - paste over; shifting markers and labels in multichannel
                  Expand/Shrink; MIDI input support
 v1.31 03.04.14 - song duration estimate, displayed in the window header

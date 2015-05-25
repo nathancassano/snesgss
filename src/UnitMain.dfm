@@ -2,7 +2,7 @@ object FormMain: TFormMain
   Left = 0
   Top = 0
   Caption = 'SNES GSS'
-  ClientHeight = 696
+  ClientHeight = 717
   ClientWidth = 982
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -93,7 +93,7 @@ object FormMain: TFormMain
     Left = 0
     Top = 0
     Width = 982
-    Height = 696
+    Height = 717
     ActivePage = TabSheetSong
     Align = alClient
     TabOrder = 0
@@ -104,7 +104,7 @@ object FormMain: TFormMain
         Left = 0
         Top = 0
         Width = 974
-        Height = 665
+        Height = 686
         Align = alClient
         OnDblClick = PaintBoxSongDblClick
         OnMouseDown = PaintBoxSongMouseDown
@@ -124,7 +124,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 644
+      ExplicitHeight = 0
       object SpeedButtonSongUp: TSpeedButton
         Left = 359
         Top = 24
@@ -177,6 +177,7 @@ object FormMain: TFormMain
           TabOrder = 0
           Text = 'EditSongName'
           OnChange = EditSongNameChange
+          OnKeyPress = EditSongNameKeyPress
         end
         object ListBoxSong: TListBox
           Left = 9
@@ -197,6 +198,7 @@ object FormMain: TFormMain
         Width = 97
         Height = 17
         Hint = 'Mark the song as a sound effect'
+        TabStop = False
         Caption = 'Sound effect'
         ParentShowHint = False
         ShowHint = True
@@ -210,7 +212,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 644
+      ExplicitHeight = 0
       object SpeedButtonImportWav: TSpeedButton
         Left = 514
         Top = 258
@@ -390,6 +392,7 @@ object FormMain: TFormMain
           TabOrder = 0
           Text = 'EditInsName'
           OnChange = EditInsNameChange
+          OnKeyPress = EditInsNameKeyPress
         end
         object ListBoxIns: TListBox
           Left = 9
@@ -819,7 +822,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 644
+      ExplicitHeight = 0
       object GroupBoxMemoryUse: TGroupBox
         Left = 3
         Top = 3
@@ -892,6 +895,13 @@ object FormMain: TFormMain
     Top = 392
     object MFile: TMenuItem
       Caption = '&File'
+      object MNew: TMenuItem
+        Caption = '&New'
+        OnClick = MNewClick
+      end
+      object N10: TMenuItem
+        Caption = '-'
+      end
       object MOpen: TMenuItem
         Caption = '&Open'
         OnClick = MOpenClick
