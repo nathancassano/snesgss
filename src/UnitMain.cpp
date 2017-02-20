@@ -16,7 +16,7 @@ TFormMain *FormMain;
 
 
 
-#define VERSION_STR				"SNES GSS v1.41"
+#define VERSION_STR				"SNES GSS v1.42"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
@@ -2125,16 +2125,96 @@ void __fastcall TFormMain::SongListUpdate(void)
 
 
 
+void __fastcall TFormMain::MInstrumentItemClick(TObject *Sender)
+{
+	InsCur=((TMenuItem*)Sender)->Tag;
+	ListBoxIns->ItemIndex=InsCur;
+	InsChange(InsCur);
+	InsListUpdate();
+}
+
+
+
 void __fastcall TFormMain::InsListUpdate(void)
 {
-	int ins;
+	TMenuItem *NewItem;
+	AnsiString item_name,ins_name;
+	int i,j,ins,ins_count;
+
+	ins_count=0;
 
 	for(ins=0;ins<MAX_INSTRUMENTS;++ins)
 	{
-		ListBoxIns->Items->Strings[ins]=IntToStrLen(ins+1,2)+": "+insList[ins].name;
+		//create instrument and menu item name
+
+		ins_name=IntToStrLen(ins+1,2)+": "+insList[ins].name;
+		item_name="MInstrumentItem"+IntToStr(ins);
+
+		//find and delete main menu entries with this name
+
+		for(j=0;j<MInstruments->Count;++j)
+		{
+			if(MInstruments->Items[j]->Name==item_name)
+			{
+				delete MInstruments->Items[j];
+				break;
+			}
+		}
+
+		//add menu item
+
+		if(insList[ins].source)
+		{
+			NewItem = new TMenuItem(this); // The owner will cleanup these menu items.
+			NewItem->Caption = ins_name;
+			NewItem->Name = item_name;
+			NewItem->Tag=ins;
+			NewItem->OnClick=MInstrumentItemClick;
+
+			MInstruments->Add(NewItem);
+
+			++ins_count;
+		}
+
+		//update list box entry
+
+		ListBoxIns->Items->Strings[ins]=ins_name;
+	}
+
+	//try to find the 'no instruments' menu item and delete it
+
+	for(j=0;j<MInstruments->Count;++j)
+	{
+		if(MInstruments->Items[j]->Name=="MInstrumentNone")
+		{
+			delete MInstruments->Items[j];
+			break;
+		}
+	}
+
+	//add the item back if there is no instruments indeed
+
+	if(!ins_count)
+	{
+		NewItem = new TMenuItem(this); // The owner will cleanup these menu items.
+		NewItem->Caption = "no instruments";
+		NewItem->Name = "MInstrumentNone";
+		NewItem->Enabled=false;
+
+		MInstruments->Add(NewItem);
 	}
 
 	if(ListBoxIns->ItemIndex<0) ListBoxIns->ItemIndex=InsCur;
+
+	//scan through instrument items and make currently selected checked
+
+	for(j=0;j<MInstruments->Count;++j)
+	{
+		if(MInstruments->Items[j]->Name.SubString(0,15)=="MInstrumentItem")
+		{
+			MInstruments->Items[j]->Checked=(MInstruments->Items[j]->Tag==InsCur?true:false);
+		}
+	}
 }
 
 
@@ -4260,9 +4340,18 @@ void __fastcall TFormMain::SetSectionName(int row,AnsiString name)
 
 void __fastcall TFormMain::EnterNoteKey(int note)
 {
+	int chn;
+
+	chn=(ColCur-2)/5;
+
 	SetUndo();
 
-	songList[SongCur].row[RowCur].chn[(ColCur-2)/5].note=note;
+	songList[SongCur].row[RowCur].chn[chn].note=note;
+
+	if(MInstrumentAutoNumber->Checked)
+	{
+		if(note>1) songList[SongCur].row[RowCur].chn[chn].instrument=InsCur+1;
+	}
 
 	SPCPlayRow(RowCur);
 	SongMoveRowCursor(AutoStep);
@@ -5864,6 +5953,7 @@ void __fastcall TFormMain::ListBoxInsMouseDown(TObject *Sender,
 TMouseButton Button, TShiftState Shift, int X, int Y)
 {
 	InsChange(ListBoxIns->ItemIndex);
+	InsListUpdate();
 }
 //---------------------------------------------------------------------------
 

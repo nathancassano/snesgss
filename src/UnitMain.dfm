@@ -2,7 +2,7 @@ object FormMain: TFormMain
   Left = 0
   Top = 0
   Caption = 'SNES GSS'
-  ClientHeight = 717
+  ClientHeight = 729
   ClientWidth = 982
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -93,7 +93,7 @@ object FormMain: TFormMain
     Left = 0
     Top = 0
     Width = 982
-    Height = 717
+    Height = 729
     ActivePage = TabSheetSong
     Align = alClient
     TabOrder = 0
@@ -104,7 +104,7 @@ object FormMain: TFormMain
         Left = 0
         Top = 0
         Width = 974
-        Height = 686
+        Height = 698
         Align = alClient
         OnDblClick = PaintBoxSongDblClick
         OnMouseDown = PaintBoxSongMouseDown
@@ -124,7 +124,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 677
       object SpeedButtonSongUp: TSpeedButton
         Left = 359
         Top = 24
@@ -212,7 +212,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 677
       object SpeedButtonImportWav: TSpeedButton
         Left = 514
         Top = 258
@@ -822,7 +822,7 @@ object FormMain: TFormMain
       ExplicitLeft = 0
       ExplicitTop = 0
       ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 677
       object GroupBoxMemoryUse: TGroupBox
         Left = 3
         Top = 3
@@ -1000,6 +1000,16 @@ object FormMain: TFormMain
       object MInstrumentReplace: TMenuItem
         Caption = 'Replace instrument number'
         OnClick = MInstrumentReplaceClick
+      end
+      object N11: TMenuItem
+        Caption = '-'
+      end
+      object MInstrumentAutoNumber: TMenuItem
+        AutoCheck = True
+        Caption = 'Auto insert instrument number'
+      end
+      object N12: TMenuItem
+        Caption = '-'
       end
     end
     object N2: TMenuItem

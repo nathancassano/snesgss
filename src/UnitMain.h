@@ -249,6 +249,9 @@ class TFormMain : public TForm
 	TLabel *Label8;
 	TMenuItem *MNew;
 	TMenuItem *N10;
+	TMenuItem *N11;
+	TMenuItem *N12;
+	TMenuItem *MInstrumentAutoNumber;
 	void __fastcall FormCreate(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall MExitClick(TObject *Sender);
@@ -347,6 +350,7 @@ class TFormMain : public TForm
 	void __fastcall EditSongNameKeyPress(TObject *Sender, char &Key);
 	void __fastcall MNewClick(TObject *Sender);
 	void __fastcall EditInsNameKeyPress(TObject *Sender, char &Key);
+
 private:	// User declarations
 public:		// User declarations
 	__fastcall TFormMain(TComponent* Owner);
@@ -472,6 +476,8 @@ public:		// User declarations
 	int __fastcall TFormMain::SongCalculateDuration(int song);
 
 	void __fastcall TFormMain::EnterNoteKey(int note);
+
+	void __fastcall TFormMain::MInstrumentItemClick(TObject *Sender);
 
 	int WaveOutSampleRate;
 	int WaveOutBufferSize;
