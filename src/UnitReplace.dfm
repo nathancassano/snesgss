@@ -12,9 +12,10 @@ object FormReplace: TFormReplace
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  Position = poMainFormCenter
   Scaled = False
   OnCreate = FormCreate
-  PixelsPerInch = 120
+  PixelsPerInch = 96
   TextHeight = 16
   object Label1: TLabel
     Left = 208
@@ -94,7 +95,7 @@ object FormReplace: TFormReplace
     Width = 40
     Height = 24
     TabOrder = 1
-    Text = '0'
+    Text = '1'
     OnKeyPress = EditFromKeyPress
   end
   object UpDownFrom: TUpDown
@@ -114,7 +115,7 @@ object FormReplace: TFormReplace
     Width = 40
     Height = 24
     TabOrder = 3
-    Text = '0'
+    Text = '1'
     OnKeyPress = EditFromKeyPress
   end
   object UpDownTo: TUpDown

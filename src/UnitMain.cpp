@@ -7,6 +7,7 @@
 #include "UnitSectionName.h"
 #include "UnitSectionList.h"
 #include "UnitSubSong.h"
+#include "UnitOutputMonitor.h"
 
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -15,7 +16,7 @@ TFormMain *FormMain;
 
 
 
-#define VERSION_STR				"SNES GSS v1.22"
+#define VERSION_STR				"SNES GSS v1.42"
 
 #define CONFIG_NAME				"snesgss.cfg"
 #define PROJECT_SIGNATURE 		"[SNESGSS Module]"
@@ -24,6 +25,7 @@ TFormMain *FormMain;
 #define EX_VOL_SIGNATURE		"[EX VOL]"
 
 #define UPDATE_RATE_HZ			160
+#define DEFAULT_SPEED			(UPDATE_RATE_HZ/(120*(1.0/60.0)*4)) //default speed for 120 BPM
 
 #define ENABLE_SONG_COMPRESSION
 
@@ -46,9 +48,12 @@ void handle_gme_error(gme_err_t error)
 	}
 }
 
+#include "tuner.h"
 #include "waveout.h"
 #include "config.h"
 #include "3band_eq.h"
+
+
 
 instrumentStruct insList[MAX_INSTRUMENTS];
 
@@ -196,11 +201,12 @@ AnsiString ModuleFileName;
 
 
 
-
 float get_volume_scale(int vol)
 {
 	if(vol<128) return 1.0f+(float)(vol-128)/128.0f; else return 1.0f+(float)(vol-128)/64.0f;
 }
+
+
 
 #include "brr/brr.cpp"
 #include "brr/brr_encoder.cpp"
@@ -853,7 +859,7 @@ void __fastcall TFormMain::ReplaceInstrument(bool block,bool song,bool channel,i
 
 void __fastcall TFormMain::ExpandSelection(void)
 {
-	int col,colc,rowc;
+	int col,colc,row,rowc,rowcc;
 
 	if(SelectionHeight<2) return;
 
@@ -862,11 +868,33 @@ void __fastcall TFormMain::ExpandSelection(void)
 	if(SelectionRowS<SelectionRowE) RowCur=SelectionRowS+1; else RowCur=SelectionRowE+1;
 	if(SelectionColS<SelectionColE) col=SelectionColS; else col=SelectionColE;
 
+	row=RowCur;
+
 	for(rowc=0;rowc<SelectionHeight;++rowc)
 	{
 		for(colc=0;colc<SelectionWidth;++colc) SongInsertShiftColumn(col+colc,RowCur);
 
 		RowCur+=2;
+	}
+
+	if(col<2||((SelectionColS-2)/5)!=((SelectionColE-2)/5))//shift markers and labels
+	{
+		for(rowc=0;rowc<SelectionHeight;++rowc)
+		{
+			if(row<MAX_ROWS)
+			{
+				for(rowcc=MAX_ROWS-1;rowcc>row;--rowcc)
+				{
+					songList[SongCur].row[rowcc].marker=songList[SongCur].row[rowcc-1].marker;
+					songList[SongCur].row[rowcc].name  =songList[SongCur].row[rowcc-1].name;
+				}
+
+				songList[SongCur].row[row].marker=false;
+				songList[SongCur].row[row].name="";
+			}
+
+			row+=2;
+		}
 	}
 
 	--RowCur;
@@ -880,7 +908,7 @@ void __fastcall TFormMain::ExpandSelection(void)
 
 void __fastcall TFormMain::ShrinkSelection(void)
 {
-	int col,colc,rowc;
+	int col,colc,row,rowc,rowcc;
 
 	if(SelectionHeight<2) return;
 
@@ -889,11 +917,33 @@ void __fastcall TFormMain::ShrinkSelection(void)
 	if(SelectionRowS<SelectionRowE) RowCur=SelectionRowS+2; else RowCur=SelectionRowE+2;
 	if(SelectionColS<SelectionColE) col=SelectionColS; else col=SelectionColE;
 
+	row=RowCur;
+
 	for(rowc=0;rowc<SelectionHeight/2;++rowc)
 	{
 		for(colc=0;colc<SelectionWidth;++colc) SongDeleteShiftColumn(col+colc,RowCur);
 
 		++RowCur;
+	}
+
+	if(col<2||((SelectionColS-2)/5)!=((SelectionColE-2)/5))//shift markers and labels
+	{
+		for(rowc=0;rowc<SelectionHeight/2;++rowc)
+		{
+			if(row>0)
+			{
+				for(rowcc=row;rowcc<MAX_ROWS;++rowcc)
+				{
+					songList[SongCur].row[rowcc-1].marker=songList[SongCur].row[rowcc].marker;
+					songList[SongCur].row[rowcc-1].name  =songList[SongCur].row[rowcc].name;
+				}
+
+				songList[SongCur].row[MAX_ROWS-1].marker=false;
+				songList[SongCur].row[MAX_ROWS-1].name="";
+			}
+
+			++row;
+		}
 	}
 
 	RowCur-=2;
@@ -917,6 +967,8 @@ void __fastcall TFormMain::SetUndo(void)
 	UndoBuffer.rowCur=RowCur;
 	UndoBuffer.colCur=ColCur;
 	UndoBuffer.available=true;
+
+	UpdateInfo(true);
 }
 
 
@@ -1111,7 +1163,7 @@ void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift)
 
 
 
-void __fastcall TFormMain::PasteFromBuffer(bool shift)
+void __fastcall TFormMain::PasteFromBuffer(bool shift,bool mix)
 {
 	noteFieldStruct *n,*m;
 	int col,row,colc,rowc,rows,rowd,chn,chncol,len;
@@ -1129,6 +1181,7 @@ void __fastcall TFormMain::PasteFromBuffer(bool shift)
 			chn=(col-2)/5;
 			chncol=(col-2)%5;
 		}
+
 		if(shift)
 		{
 			if(SelectionRowS<SelectionRowE) rows=SelectionRowS; else rows=SelectionRowE;
@@ -1167,29 +1220,62 @@ void __fastcall TFormMain::PasteFromBuffer(bool shift)
 			}
 		}
 
-		for(rowc=0;rowc<CopyBufferHeight;++rowc)
+		if(!mix)
 		{
-			if(col==1)
+			for(rowc=0;rowc<CopyBufferHeight;++rowc)
 			{
-				if(CopyBufferColumnType[colc]==COLUMN_TYPE_SPEED) songList[SongCur].row[row].speed=CopyBuffer[colc][rowc];
-			}
-			else
-			{
-				n=&songList[SongCur].row[row].chn[chn];
-
-				switch(chncol)
+				if(col==1)
 				{
-				case 0: if(CopyBufferColumnType[colc]==COLUMN_TYPE_NOTE)       n->note      =CopyBuffer[colc][rowc]; break;
-				case 1: if(CopyBufferColumnType[colc]==COLUMN_TYPE_INSTRUMENT) n->instrument=CopyBuffer[colc][rowc]; break;
-				case 2: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      n->volume    =CopyBuffer[colc][rowc]; break;
-				case 3: if(CopyBufferColumnType[colc]==COLUMN_TYPE_EFFECT)     n->effect    =CopyBuffer[colc][rowc]; break;
-				case 4: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      n->value     =CopyBuffer[colc][rowc]; break;
+					if(CopyBufferColumnType[colc]==COLUMN_TYPE_SPEED) songList[SongCur].row[row].speed=CopyBuffer[colc][rowc];
 				}
+				else
+				{
+					n=&songList[SongCur].row[row].chn[chn];
+
+					switch(chncol)
+					{
+					case 0: if(CopyBufferColumnType[colc]==COLUMN_TYPE_NOTE)       n->note      =CopyBuffer[colc][rowc]; break;
+					case 1: if(CopyBufferColumnType[colc]==COLUMN_TYPE_INSTRUMENT) n->instrument=CopyBuffer[colc][rowc]; break;
+					case 2: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      n->volume    =CopyBuffer[colc][rowc]; break;
+					case 3: if(CopyBufferColumnType[colc]==COLUMN_TYPE_EFFECT)     n->effect    =CopyBuffer[colc][rowc]; break;
+					case 4: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      n->value     =CopyBuffer[colc][rowc]; break;
+					}
+				}
+
+				++row;
+
+				if(row>=MAX_ROWS) break;
 			}
+		}
+		else
+		{
+			for(rowc=0;rowc<CopyBufferHeight;++rowc)
+			{
+				if(col==1)
+				{
+					if(CopyBufferColumnType[colc]==COLUMN_TYPE_SPEED)
+					{
+						if(!songList[SongCur].row[row].speed) songList[SongCur].row[row].speed=CopyBuffer[colc][rowc];
+					}
+				}
+				else
+				{
+					n=&songList[SongCur].row[row].chn[chn];
 
-			++row;
+					switch(chncol)
+					{
+					case 0: if(CopyBufferColumnType[colc]==COLUMN_TYPE_NOTE)       if(!n->note       ) n->note      =CopyBuffer[colc][rowc]; break;
+					case 1: if(CopyBufferColumnType[colc]==COLUMN_TYPE_INSTRUMENT) if(!n->instrument ) n->instrument=CopyBuffer[colc][rowc]; break;
+					case 2: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      if( n->volume==255) n->volume    =CopyBuffer[colc][rowc]; break;
+					case 3: if(CopyBufferColumnType[colc]==COLUMN_TYPE_EFFECT)     if(!n->effect     ) n->effect    =CopyBuffer[colc][rowc]; break;
+					case 4: if(CopyBufferColumnType[colc]==COLUMN_TYPE_VALUE)      if( n->value==255 ) n->value     =CopyBuffer[colc][rowc]; break;
+					}
+				}
 
-			if(row>=MAX_ROWS) break;
+				++row;
+
+				if(row>=MAX_ROWS) break;
+			}
 		}
 
 		++col;
@@ -1247,7 +1333,9 @@ void __fastcall TFormMain::ModuleClear(void)
 {
 	int i;
 
-	for(i=0;i<MAX_SONGS;++i) SongClear(i);
+	for(i=0;i<MAX_SONGS;++i) SongDataClear(i);
+
+	SongClear(0);
 
 	for(i=0;i<MAX_INSTRUMENTS;++i) InstrumentClear(i);
 
@@ -1258,12 +1346,12 @@ void __fastcall TFormMain::ModuleClear(void)
 
 	for(i=0;i<8;++i) ChannelMute[i]=false;
 
-	UpdateInfo();
+	UpdateInfo(false);
 }
 
 
 
-void __fastcall TFormMain::SongClear(int song)
+void __fastcall TFormMain::SongDataClear(int song)
 {
 	int row,chn;
 
@@ -1280,15 +1368,22 @@ void __fastcall TFormMain::SongClear(int song)
 		songList[song].row[row].name="";
 	}
 
+	songList[song].measure=4;
+	songList[song].length=MAX_ROWS-1;
+	songList[song].name="untitled";
+}
+
+
+
+void __fastcall TFormMain::SongClear(int song)
+{
+	SongDataClear(song);
+
 	RowCur=0;
 	ColCur=2;
 	ColCurPrev=-1;
 
 	ResetNumber=true;
-
-	songList[song].measure=4;
-	songList[song].length=MAX_ROWS-1;
-	songList[song].name="untitled";
 
 	RenderPattern();
 
@@ -1300,6 +1395,32 @@ void __fastcall TFormMain::SongClear(int song)
 	SelectionHeight=0;
 
 	CenterView();
+	UpdateInfo(false);
+}
+
+
+
+int __fastcall TFormMain::SongCalculateDuration(int song)
+{
+	int row,n,length,speed,duration;
+
+	length=SongFindLastRow(&songList[song]);
+
+	duration=0;
+	speed=DEFAULT_SPEED;
+
+	for(row=0;row<length;++row)
+	{
+		if(songList[song].row[row].speed) speed=songList[song].row[row].speed;
+
+		duration+=speed;
+	}
+
+	if(!duration) return 0;
+
+	if(duration<UPDATE_RATE_HZ) return 1;
+
+	return duration/UPDATE_RATE_HZ;
 }
 
 
@@ -1764,7 +1885,7 @@ void __fastcall TFormMain::UpdateAll(void)
 	SongUpdateControls();
 	SongListUpdate();
 	RenderPattern();
-	UpdateInfo();
+	UpdateInfo(false);
 
 	if(PageControlMode->ActivePage==TabSheetInfo) TabSheetInfoShow(this);
 }
@@ -1775,6 +1896,7 @@ void __fastcall TFormMain::ModuleOpen(AnsiString filename)
 {
 	if(ModuleOpenFile(filename))
 	{
+		SPCCompile(&songList[0],0,false,false,-1);
 		CompileAllSongs();
 		UpdateAll();
 
@@ -2003,16 +2125,96 @@ void __fastcall TFormMain::SongListUpdate(void)
 
 
 
+void __fastcall TFormMain::MInstrumentItemClick(TObject *Sender)
+{
+	InsCur=((TMenuItem*)Sender)->Tag;
+	ListBoxIns->ItemIndex=InsCur;
+	InsChange(InsCur);
+	InsListUpdate();
+}
+
+
+
 void __fastcall TFormMain::InsListUpdate(void)
 {
-	int ins;
+	TMenuItem *NewItem;
+	AnsiString item_name,ins_name;
+	int i,j,ins,ins_count;
+
+	ins_count=0;
 
 	for(ins=0;ins<MAX_INSTRUMENTS;++ins)
 	{
-		ListBoxIns->Items->Strings[ins]=IntToStrLen(ins+1,2)+": "+insList[ins].name;
+		//create instrument and menu item name
+
+		ins_name=IntToStrLen(ins+1,2)+": "+insList[ins].name;
+		item_name="MInstrumentItem"+IntToStr(ins);
+
+		//find and delete main menu entries with this name
+
+		for(j=0;j<MInstruments->Count;++j)
+		{
+			if(MInstruments->Items[j]->Name==item_name)
+			{
+				delete MInstruments->Items[j];
+				break;
+			}
+		}
+
+		//add menu item
+
+		if(insList[ins].source)
+		{
+			NewItem = new TMenuItem(this); // The owner will cleanup these menu items.
+			NewItem->Caption = ins_name;
+			NewItem->Name = item_name;
+			NewItem->Tag=ins;
+			NewItem->OnClick=MInstrumentItemClick;
+
+			MInstruments->Add(NewItem);
+
+			++ins_count;
+		}
+
+		//update list box entry
+
+		ListBoxIns->Items->Strings[ins]=ins_name;
+	}
+
+	//try to find the 'no instruments' menu item and delete it
+
+	for(j=0;j<MInstruments->Count;++j)
+	{
+		if(MInstruments->Items[j]->Name=="MInstrumentNone")
+		{
+			delete MInstruments->Items[j];
+			break;
+		}
+	}
+
+	//add the item back if there is no instruments indeed
+
+	if(!ins_count)
+	{
+		NewItem = new TMenuItem(this); // The owner will cleanup these menu items.
+		NewItem->Caption = "no instruments";
+		NewItem->Name = "MInstrumentNone";
+		NewItem->Enabled=false;
+
+		MInstruments->Add(NewItem);
 	}
 
 	if(ListBoxIns->ItemIndex<0) ListBoxIns->ItemIndex=InsCur;
+
+	//scan through instrument items and make currently selected checked
+
+	for(j=0;j<MInstruments->Count;++j)
+	{
+		if(MInstruments->Items[j]->Name.SubString(0,15)=="MInstrumentItem")
+		{
+			MInstruments->Items[j]->Checked=(MInstruments->Items[j]->Tag==InsCur?true:false);
+		}
+	}
 }
 
 
@@ -2199,9 +2401,18 @@ void __fastcall TFormMain::InsUpdateControls(void)
 
 
 
-void __fastcall TFormMain::UpdateInfo(void)
+void __fastcall TFormMain::UpdateInfo(bool header_only)
 {
-	Caption=AnsiString(VERSION_STR)+" ["+ModuleFileName+"] [Song "+IntToStr(SongCur+1)+": "+songList[SongCur].name+"]";
+	int duration;
+	AnsiString dstr;
+
+	duration=SongCalculateDuration(SongCur);
+
+	dstr=IntToStr(duration/60)+"m"+Format("%2.2ds",ARRAYOFCONST((duration%60)));
+
+	Caption=AnsiString(VERSION_STR)+" ["+ModuleFileName+"] [Song "+IntToStr(SongCur+1)+": "+songList[SongCur].name+"] ["+dstr+"]";
+
+	if(header_only) return;
 
 	MOctave->Caption="Octave:"+IntToStr(OctaveCur);
 	MAutostep->Caption="Autostep:"+IntToStr(AutoStep);
@@ -2237,13 +2448,13 @@ void __fastcall TFormMain::SongChange(int song)
 
 	SongUpdateControls();
 	SongListUpdate();
-	UpdateInfo();
-
 	ResetUndo();
 
 	RenderPattern();
 
 	if(PageControlMode->ActivePage==TabSheetInfo) TabSheetInfoShow(this);
+
+	UpdateInfo(true);
 }
 
 
@@ -2357,7 +2568,7 @@ void __fastcall TFormMain::RenderADSR(void)
 				}
 			}
 
-			if(off>=insList[InsCur].length)//draw loop end line, wrap up the waveform
+			if(off>=insList[InsCur].length||off>=insList[InsCur].source_length||(insList[InsCur].loop_enable&&off>=insList[InsCur].loop_end))//draw loop end line, wrap up the waveform
 			{
 				if(insList[InsCur].loop_enable) off=insList[InsCur].loop_start; else off=insList[InsCur].length;
 
@@ -2525,7 +2736,7 @@ int __fastcall TFormMain::SongFindLastRow(songStruct *s)
 		if(!SongIsRowEmpty(s,row,false)) return row;
 	}
 
-	return MAX_ROWS-1;
+	return 0;
 }
 
 
@@ -2551,7 +2762,14 @@ void __fastcall TFormMain::SongCleanUp(songStruct *s)
 				if(n->instrument!=prev_ins) prev_ins=n->instrument; else n->instrument=0;
 			}
 
-			if(n->volume!=prev_vol) prev_vol=n->volume; else n->volume=255;
+			if(n->volume!=prev_vol)
+			{
+				if(n->volume!=255) prev_vol=n->volume;
+			}
+			else
+			{
+				n->volume=255;
+			}
 
 			if(row==s->loop_start&&s->loop_start>0)//set instrument and volume at the loop point, just in case
 			{
@@ -3476,6 +3694,9 @@ void __fastcall TFormMain::RenderPatternColor(TCanvas *c,int row,int col,TColor 
 
 void __fastcall TFormMain::CenterView(void)
 {
+	if(RowCur<0) RowCur=0;
+	if(RowCur>=MAX_ROWS) RowCur=MAX_ROWS-1;
+
 	RowView=RowCur;
 }
 
@@ -3562,9 +3783,9 @@ void __fastcall TFormMain::RenderPattern(void)
 
 	for(row=0;row<row2x/2;++row)
 	{
-		 if(s->row[row].marker) rowhl=0;
+		if(s->row[row].marker) rowhl=0;
 
-		 ++rowhl;
+		++rowhl;
 	}
 
 	x=0;
@@ -3910,7 +4131,7 @@ void __fastcall TFormMain::SongInsertShiftColumn(int col,int row)
 	noteFieldStruct *n,*m;
 	int rowc,chn;
 
-	if(!col) return;
+	if(!col||row>=MAX_ROWS) return;
 
 	if(col==1)
 	{
@@ -3981,7 +4202,7 @@ void __fastcall TFormMain::SongDeleteShift(int col,int row)
 
 void __fastcall TFormMain::SongInsertShift(int col,int row)
 {
-	int chn;
+	int i;
 
 	if(!col) return;
 
@@ -3995,7 +4216,7 @@ void __fastcall TFormMain::SongInsertShift(int col,int row)
 	{
 		col=((col-2)/5)*5+2;
 
-		for(chn=0;chn<5;++chn) SongInsertShiftColumn(col+chn,row);
+		for(i=0;i<5;++i) SongInsertShiftColumn(col+i,row);
 	}
 
 	RenderPattern();
@@ -4117,13 +4338,70 @@ void __fastcall TFormMain::SetSectionName(int row,AnsiString name)
 
 
 
+void __fastcall TFormMain::EnterNoteKey(int note)
+{
+	int chn;
+
+	chn=(ColCur-2)/5;
+
+	SetUndo();
+
+	songList[SongCur].row[RowCur].chn[chn].note=note;
+
+	if(MInstrumentAutoNumber->Checked)
+	{
+		if(note>1) songList[SongCur].row[RowCur].chn[chn].instrument=InsCur+1;
+	}
+
+	SPCPlayRow(RowCur);
+	SongMoveRowCursor(AutoStep);
+	RenderPattern();
+}
+
+
+
 void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 {
 	noteFieldStruct *n;
-	int Key,num,row,cnt;
+	int i,Key,num,row,cnt,note;
 	bool Shift,Ctrl,First;
 
-	if(!Active) return;
+	if(!Active&&!FormOutputMonitor->Active) return;
+
+	if(Msg.message==MIM_DATA)
+	{
+		Key=(Msg.lParam>>8)&0x7f;
+
+		note=Key+2-12;
+
+		if(note<2) note=2;
+		if(note>2+8*12-1) note=2+8*12-1;
+
+		if((Msg.lParam&0xf0)==0x90)
+		{
+			if(((Msg.lParam>>16)&0xff)!=0)//keyon
+			{
+				MidiKeyState[Key]=TRUE;
+
+				if(FormMain->PageControlMode->ActivePage==FormMain->TabSheetSong) FormMain->EnterNoteKey(note);
+
+				if(PageControlMode->ActivePage==TabSheetInstruments) SPCPlayNote(note,InsCur);
+			}
+			else//keyoff
+			{
+				MidiKeyState[Key]=FALSE;
+
+				num=0;
+
+				for(i=0;i<128;++i) if(MidiKeyState[i]) ++num;
+
+				if(!num) SPCStop();//stop sound only if there is no MIDI keys pressed
+			}
+		}
+
+		Handled=true;
+		return;
+	}
 
 	if(Msg.message==WM_KEYUP)
 	{
@@ -4214,14 +4492,14 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 			case VK_DIVIDE:
 				--OctaveCur;
 				if(OctaveCur<1) OctaveCur=8;
-				UpdateInfo();
+				UpdateInfo(false);
 				Handled=true;
 				return;
 
 			case VK_MULTIPLY:
 				++OctaveCur;
 				if(OctaveCur>8) OctaveCur=1;
-				UpdateInfo();
+				UpdateInfo(false);
 				Handled=true;
 				return;
 
@@ -4234,7 +4512,7 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 			case VK_NUMPAD7:
 			case VK_NUMPAD8:
 				OctaveCur=Key-VK_NUMPAD1+1;
-				UpdateInfo();
+				UpdateInfo(false);
 				Handled=true;
 				return;
 			}
@@ -4267,7 +4545,7 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 				return;
 			}
 
-			if(Shift)//check key combinatiosn with the Shift key
+			if(Shift)//check key combinations with the Shift key
 			{
 				switch(Key)
 				{
@@ -4280,7 +4558,7 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 
 				case 'V':
 					SetUndo();
-					PasteFromBuffer(true);
+					PasteFromBuffer(true,false);
 					RenderPattern();
 					Handled=true;
 					return;
@@ -4315,7 +4593,7 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 					{
 						if(songList[SongCur].row[row].name!=""||songList[SongCur].row[row].marker)
 						{
-							 FormSectionList->ListBoxSections->Items->Add(Format("%4.4d",ARRAYOFCONST((row)))+": "+songList[SongCur].row[row].name);
+							FormSectionList->ListBoxSections->Items->Add(Format("%4.4d",ARRAYOFCONST((row)))+": "+songList[SongCur].row[row].name);
 						}
 
 						if(row==RowCur) FormSectionList->ListBoxSections->ItemIndex=FormSectionList->ListBoxSections->Items->Count-1;
@@ -4405,7 +4683,14 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 
 				case 'V':
 					SetUndo();
-					PasteFromBuffer(false);
+					PasteFromBuffer(false,false);
+					RenderPattern();
+					Handled=true;
+					return;
+
+				case 'B':
+					SetUndo();
+					PasteFromBuffer(false,true);
 					RenderPattern();
 					Handled=true;
 					return;
@@ -4490,11 +4775,8 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 
 								if(num>=0&&First)//no autorepeat for the note keys
 								{
-									SetUndo();
-									n->note=num;
-									SPCPlayRow(RowCur);
-									SongMoveRowCursor(AutoStep);
-									RenderPattern();
+									EnterNoteKey(num);
+
 									Handled=true;
 									return;
 								}
@@ -4751,14 +5033,14 @@ void __fastcall TFormMain::AppMessage(tagMSG &Msg, bool &Handled)
 				case VK_OEM_4:
 					--AutoStep;
 					if(AutoStep<0) AutoStep=16;
-					UpdateInfo();
+					UpdateInfo(false);
 					Handled=true;
 					return;
 
 				case VK_OEM_6:
 					++AutoStep;
 					if(AutoStep>16) AutoStep=0;
-					UpdateInfo();
+					UpdateInfo(false);
 					Handled=true;
 					return;
 
@@ -5516,7 +5798,7 @@ __fastcall TFormMain::TFormMain(TComponent* Owner)
 void __fastcall TFormMain::FormCreate(TObject *Sender)
 {
 	AnsiString dir;
-	int i;
+	int i,midi_id,midi_all;
 
 	for(i=0;i<this->ComponentCount;i++)
 	{
@@ -5545,7 +5827,7 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 	SPCMusicLargestSize=0;
 
 	ModuleFileName=SaveDialogModule->FileName+"."+SaveDialogModule->DefaultExt;
-	
+
 	UpdateSampleData=true;
 
 	PrevMouseY=0;
@@ -5554,12 +5836,14 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 	ModuleClear();
 
 	dir=ParamStr(0).SubString(0,ParamStr(0).LastDelimiter("\\/"));
-	
+
 	config_open((dir+CONFIG_NAME).c_str());
 
 	WaveOutSampleRate =config_read_int("WaveOutSampleRate",44100);
 	WaveOutBufferSize =config_read_int("WaveOutBufferSize",2048);
 	WaveOutBufferCount=config_read_int("WaveOutBufferCount",8);
+
+	midi_id=config_read_int("MidiInputDeviceID",0);
 
 	PageStep=config_read_int("SongPageStep",DEFAULT_PAGE_ROWS);
 	AutoStep=config_read_int("SongAutoStep",1);
@@ -5576,7 +5860,6 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 	InsListUpdate();
 	SongListUpdate();
 	SongUpdateControls();
-	UpdateInfo();
 
 	ResetCopyBuffer();
 
@@ -5609,7 +5892,24 @@ void __fastcall TFormMain::FormCreate(TObject *Sender)
 		}
 	}
 
+	UpdateInfo(false);
+
+	tuner_init();
 	waveout_init(Handle,WaveOutSampleRate,WaveOutBufferSize,WaveOutBufferCount);
+
+	MidiHandle=NULL;
+
+	midi_all=midiInGetNumDevs();
+
+	if(midi_all>0&&midi_id<midi_all)
+	{
+		if(midiInOpen(&MidiHandle,midi_id,(DWORD)Handle,NULL,CALLBACK_WINDOW)==MMSYSERR_NOERROR)
+		{
+			memset(MidiKeyState,0,sizeof(MidiKeyState));
+
+			midiInStart(MidiHandle);
+		}
+	}
 }
 //---------------------------------------------------------------------------
 
@@ -5618,8 +5918,16 @@ void __fastcall TFormMain::FormClose(TObject *Sender, TCloseAction &Action)
 	int i;
 
 	waveout_shut();
+	tuner_shut();
 
 	SPCStop();
+
+	if(MidiHandle)
+	{
+		midiInStop(MidiHandle);
+		midiInReset(MidiHandle);
+		midiInClose(MidiHandle);
+	}
 
 	if(BRRTemp) free(BRRTemp);
 
@@ -5645,6 +5953,7 @@ void __fastcall TFormMain::ListBoxInsMouseDown(TObject *Sender,
 TMouseButton Button, TShiftState Shift, int X, int Y)
 {
 	InsChange(ListBoxIns->ItemIndex);
+	InsListUpdate();
 }
 //---------------------------------------------------------------------------
 
@@ -6286,7 +6595,7 @@ void __fastcall TFormMain::MAutostepClick(TObject *Sender)
 
 	if(AutoStep>16) AutoStep=0;
 
-	UpdateInfo();
+	UpdateInfo(false);
 }
 //---------------------------------------------------------------------------
 
@@ -6295,6 +6604,7 @@ void __fastcall TFormMain::EditSongNameChange(TObject *Sender)
 	songList[SongCur].name=EditSongName->Text;
 
 	SongListUpdate();
+	UpdateInfo(true);
 }
 //---------------------------------------------------------------------------
 
@@ -6310,6 +6620,8 @@ void __fastcall TFormMain::CheckBoxEffectClick(TObject *Sender)
 	songList[SongCur].effect=CheckBoxEffect->Checked;
 
 	SongListUpdate();
+
+	if(TabSheetSongList->Visible) ListBoxSong->SetFocus();
 }
 //---------------------------------------------------------------------------
 
@@ -6413,7 +6725,7 @@ void __fastcall TFormMain::MOctave1Click(TObject *Sender)
 {
 	OctaveCur=((TMenuItem*)Sender)->Tag;
 
-	UpdateInfo();
+	UpdateInfo(false);
 }
 //---------------------------------------------------------------------------
 
@@ -6444,7 +6756,7 @@ void __fastcall TFormMain::MImportSPCBankClick(TObject *Sender)
 		insList[ins].source_length=rd_dword_lh(&smph[0]);
 		insList[ins].length       =rd_dword_lh(&smph[4]);
 		insList[ins].loop_start   =rd_dword_lh(&smph[8]);
-		insList[ins].loop_end     =insList[ins].length;
+		insList[ins].loop_end     =insList[ins].length-1;
 		insList[ins].source_rate  =rd_word_lh(&smph[12]);
 		insList[ins].env_ar       =smph[14];
 		insList[ins].env_dr       =smph[15];
@@ -6811,7 +7123,7 @@ void __fastcall TFormMain::MImportMidiClick(TObject *Sender)
 
 	s=&songList[SongCur];
 
-	s->row[0].speed=UPDATE_RATE_HZ/(120*(1.0/60.0)*4);//default speed for 120 BPM
+	s->row[0].speed=DEFAULT_SPEED;
 
 	tracks  =rd_word_hl(midi+10);
 	division=rd_word_hl(midi+12);
@@ -7031,7 +7343,6 @@ void __fastcall TFormMain::MInstrumentReplaceClick(TObject *Sender)
 void __fastcall TFormMain::TabSheetSongListEnter(TObject *Sender)
 {
 	CompileAllSongs();//get actual sizes of all songs to display in the list
-
 	SongListUpdate();
 }
 //---------------------------------------------------------------------------
@@ -7045,8 +7356,6 @@ void __fastcall TFormMain::MExportAndSaveClick(TObject *Sender)
 	ModuleSave(SaveDialogModule->FileName);
 
 	dir=ExtractFilePath(SaveDialogModule->FileName);
-
-	Caption=dir;
 
 	if(!ExportAll(dir)) Application->MessageBox("Some export error","Error",MB_OK);
 }
@@ -7079,11 +7388,13 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 	const char export_id[]="# FamiTracker text export";
 	FILE *file;
 	char *text;
-	int c,chn,pos,ptr,ptn,val,sub,note,srow,drow,size,order_len,pattern_len,loop_pos;
-	bool cut;
+	int c,chn,pos,ptr,ptn,val,sub,note,vol,srow,drow,size,order_len,pattern_len,loop_pos;
+	bool cut,sfx;
+	AnsiString temp;
 
 	struct rowStruct {
-		unsigned char chn[5];
+		unsigned char chn_note[5];
+		unsigned char chn_vol[5];
 		unsigned char speed;
 	};
 
@@ -7257,6 +7568,11 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 					note=note+(text[ptr+4]-'0')*12;
 				}
 
+				vol=0;
+				
+				if(text[ptr+9]>='0'&&text[ptr+9]<='9') vol=text[ptr+9]-'0';
+				if(text[ptr+9]>='A'&&text[ptr+9]<='F') vol=text[ptr+9]-'A'+10;
+				
 				val=(gss_hex_to_byte(text[ptr+12])<<4)+gss_hex_to_byte(text[ptr+13]);
 
 				switch(text[ptr+11])
@@ -7267,7 +7583,8 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 				case 'F': row->speed=160*val/60; break;
 				}
 
-				row->chn[chn]=note;
+				row->chn_note[chn]=note;
+				row->chn_vol [chn]=vol;
 
 				ptr+=15;
 			}
@@ -7282,7 +7599,13 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 
 	//convert
 
+	temp=songList[SongCur].name;
+	sfx=songList[SongCur].effect;
+
 	SongClear(SongCur);
+
+	songList[SongCur].name=temp;
+	songList[SongCur].effect=sfx;
 
 	drow=0;
 
@@ -7300,7 +7623,9 @@ void __fastcall TFormMain::MImportFamiTrackerClick(TObject *Sender)
 
 				if(row->speed) songList[SongCur].row[drow].speed=row->speed;
 
-				songList[SongCur].row[drow].chn[chn].note=row->chn[chn];
+				songList[SongCur].row[drow].chn[chn].note=row->chn_note[chn];
+
+				if(row->chn_vol[chn]) songList[SongCur].row[drow].chn[chn].volume=row->chn_vol[chn]*99/15;
 			}
 
 			++drow;
@@ -7342,6 +7667,101 @@ void __fastcall TFormMain::MSongScaleVolumeClick(TObject *Sender)
 	if(FormTranspose->RadioButtonAllInstruments->Checked) ins=0; else ins=InsCur+1;
 
 	ScaleVolume(FormTranspose->UpDownValue->Position,FormTranspose->RadioButtonBlock->Checked,FormTranspose->RadioButtonCurrentSong->Checked,FormTranspose->RadioButtonCurrentChannel->Checked,ins);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::MOutputMonitorClick(TObject *Sender)
+{
+	if(FormOutputMonitor->Visible) FormOutputMonitor->Hide(); else FormOutputMonitor->Show();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::TimerOutputMonitorTimer(TObject *Sender)
+{
+	AnsiString str;
+	const char *note;
+	int cents;
+
+	tuner_set_active(FormOutputMonitor->Visible);
+
+	note =tuner_get_note_name();
+	cents=tuner_get_detune();
+
+	if(note)
+	{
+		FormOutputMonitor->LabelNote ->Caption=AnsiString(note);
+
+		if(cents>0) str="+"; else str="";
+
+		FormOutputMonitor->LabelCents->Caption=str+IntToStr(cents)+" cents";
+	}
+	else
+	{
+		FormOutputMonitor->LabelNote ->Caption="---";
+		FormOutputMonitor->LabelCents->Caption="";
+	}
+
+	FormOutputMonitor->OutL=WSTREAMER.peakL;
+	FormOutputMonitor->OutR=WSTREAMER.peakR;
+
+	if(FormOutputMonitor->OutL>FormOutputMonitor->PeakL)
+	{
+		FormOutputMonitor->PeakL=FormOutputMonitor->OutL;
+	}
+	else
+	{
+		FormOutputMonitor->PeakL-=512;
+
+		if(FormOutputMonitor->PeakL<0) FormOutputMonitor->PeakL=0;
+	}
+
+	if(FormOutputMonitor->OutR>FormOutputMonitor->PeakR)
+	{
+		FormOutputMonitor->PeakR=FormOutputMonitor->OutR;
+	}
+	else
+	{
+		FormOutputMonitor->PeakR-=512;
+
+		if(FormOutputMonitor->PeakR<0) FormOutputMonitor->PeakR=0;
+	}
+
+	FormOutputMonitor->Repaint();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::EditSongNameKeyPress(TObject *Sender, char &Key)
+{
+	if(Key==VK_RETURN)
+	{
+		if(TabSheetSongList->Visible) ListBoxSong->SetFocus();
+
+		Key=0;
+	}
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::MNewClick(TObject *Sender)
+{
+	if(Application->MessageBox("All current data wiil be lost. Are you sure you want to start a new project?","Confirm",MB_YESNO)!=ID_YES) return;
+
+	ModuleInit();
+	ModuleClear();
+
+	SPCCompile(&songList[0],0,false,false,-1);
+	CompileAllSongs();
+	UpdateAll();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMain::EditInsNameKeyPress(TObject *Sender, char &Key)
+{
+	if(Key==VK_RETURN)
+	{
+		if(TabSheetInstruments->Visible) ListBoxIns->SetFocus();
+
+		Key=0;
+	}
 }
 //---------------------------------------------------------------------------
 

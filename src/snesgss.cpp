@@ -9,6 +9,7 @@ USEFORM("UnitReplace.cpp", FormReplace);
 USEFORM("UnitSectionName.cpp", FormName);
 USEFORM("UnitSectionList.cpp", FormSectionList);
 USEFORM("UnitSubSong.cpp", FormSubSong);
+USEFORM("UnitOutputMonitor.cpp", FormOutputMonitor);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -17,6 +18,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		Application->Initialize();
 		Application->Title = "SNES GSS";
 		Application->CreateForm(__classid(TFormMain), &FormMain);
+		Application->CreateForm(__classid(TFormOutputMonitor), &FormOutputMonitor);
 		Application->CreateForm(__classid(TFormTranspose), &FormTranspose);
 		Application->CreateForm(__classid(TFormReplace), &FormReplace);
 		Application->CreateForm(__classid(TFormName), &FormName);

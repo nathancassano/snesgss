@@ -15,11 +15,14 @@
 #include <FileCtrl.hpp>
 
 #include <vcl.h>
+#include <windows.h>
+#include <mmsystem.h>
 #include <stdio.h>
+
 //---------------------------------------------------------------------------
 
-#define MAX_INSTRUMENTS		100
-#define MAX_SONGS			100
+#define MAX_INSTRUMENTS		99
+#define MAX_SONGS			99
 #define MAX_ROWS			10000
 
 #define DEFAULT_PAGE_ROWS	16
@@ -239,6 +242,16 @@ class TFormMain : public TForm
 	TOpenDialog *OpenDialogImportFTM;
 	TSpeedButton *SpeedButtonLoopUnroll;
 	TMenuItem *MSongScaleVolume;
+	TMenuItem *N8;
+	TMenuItem *N9;
+	TMenuItem *MOutputMonitor;
+	TTimer *TimerOutputMonitor;
+	TLabel *Label8;
+	TMenuItem *MNew;
+	TMenuItem *N10;
+	TMenuItem *N11;
+	TMenuItem *N12;
+	TMenuItem *MInstrumentAutoNumber;
 	void __fastcall FormCreate(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall MExitClick(TObject *Sender);
@@ -332,6 +345,12 @@ class TFormMain : public TForm
 	void __fastcall MImportFamiTrackerClick(TObject *Sender);
 	void __fastcall SpeedButtonLoopUnrollClick(TObject *Sender);
 	void __fastcall MSongScaleVolumeClick(TObject *Sender);
+	void __fastcall MOutputMonitorClick(TObject *Sender);
+	void __fastcall TimerOutputMonitorTimer(TObject *Sender);
+	void __fastcall EditSongNameKeyPress(TObject *Sender, char &Key);
+	void __fastcall MNewClick(TObject *Sender);
+	void __fastcall EditInsNameKeyPress(TObject *Sender, char &Key);
+
 private:	// User declarations
 public:		// User declarations
 	__fastcall TFormMain(TComponent* Owner);
@@ -403,7 +422,8 @@ public:		// User declarations
 
 	void __fastcall TFormMain::ToggleChannelMute(int chn,bool solo);
 
-	void __fastcall TFormMain::UpdateInfo(void);
+	void __fastcall TFormMain::UpdateInfo(bool header_only);
+	void __fastcall TFormMain::SongDataClear(int song);
 	void __fastcall TFormMain::SongClear(int song);
 
 	void __fastcall TFormMain::SongMoveRowPrevMarker(void);
@@ -424,7 +444,7 @@ public:		// User declarations
 
 	void __fastcall TFormMain::ResetCopyBuffer(void);
 	void __fastcall TFormMain::CopyCutToBuffer(bool copy,bool cut,bool shift);
-	void __fastcall TFormMain::PasteFromBuffer(bool shift);
+	void __fastcall TFormMain::PasteFromBuffer(bool shift,bool mix);
 
 	void __fastcall TFormMain::TransposeArea(int semitones,int song,int chn,int row,int width,int height,int ins);
 	void __fastcall TFormMain::Transpose(int semitones,bool block,bool song,bool channel,int ins);
@@ -453,11 +473,20 @@ public:		// User declarations
 	AnsiString __fastcall TFormMain::GetSectionName(int row);
 	void __fastcall TFormMain::SetSectionName(int row,AnsiString name);
 
+	int __fastcall TFormMain::SongCalculateDuration(int song);
+
+	void __fastcall TFormMain::EnterNoteKey(int note);
+
+	void __fastcall TFormMain::MInstrumentItemClick(TObject *Sender);
+
 	int WaveOutSampleRate;
 	int WaveOutBufferSize;
 	int WaveOutBufferCount;
 
 	int InsCur;
+
+	HMIDIIN MidiHandle;
+	unsigned char MidiKeyState[128];
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TFormMain *FormMain;

@@ -550,104 +550,82 @@ spc_load_data:
 
 	.ifndef DISABLE_SOUND
 	
-	lda.w #0
-	tay
+	sei
 
 	A8
-
-	sta.l NMITIMEEN		;disable NMI,interrupts has to be disabled to prevent possible lockup in the IPL transfer routine
-	sei					;disable IRQ
-
-	A16
-
-	lda 7,s				;size
-	tax
-	lda 9,s				;src
-	sta.b sneslib_ptr
-	lda 11,s			;srch
-	sta.b sneslib_ptr+2
-
-	lda.w #$bbaa		;IPL ready signature
-	
-_wait1:
-
-	cmp.l APU01
-	bne _wait1
-
-	lda 5,s				;adr
-	sta.l APU23
-	lda.w #$01cc		;IPL load and ready signature
-	sta.l APU01
-
-	A8
-
-_wait2:
-
+	lda.b #$aa
+-
 	cmp.l APU0
-	bne _wait2
-
-	phb
-	lda #0
-	pha
-	plb
-
-_load1:
-
-	lda.b [sneslib_ptr],y
-	sta.w APU1
-	tya
-	sta.w APU0
-	iny
-	
-_load2:
-
-	cmp.w APU0
-	bne _load2
-	dex
-	bne _load1
-
-	iny
-	bne _load3
-	iny
-	
-_load3:
-
-	plb
+	bne -
 
 	A16
+	lda 11,s				;srch
+	sta.b sneslib_ptr+2
+	lda 9,s					;srcl
+	sta.b sneslib_ptr+0
+	lda 7,s					;size
+	tax
+	lda 5,s					;adr
+	sta.l APU23
+	
+	A8
+	lda.b #$01
+	sta.l APU1
+	lda.b #$cc
+	sta.l APU0
+	
+-
+	cmp.l APU0
+	bne -
+	
+	ldy.w #0
+	
+_load_loop:
 
-	lda.w #$0200		;loaded code starting address
+	xba
+	lda.b [sneslib_ptr],y
+	xba
+	tya
+	
+	A16
+	sta.l APU01
+	A8
+	
+-
+	cmp.l APU0
+	bne -
+	
+	iny
+	dex
+	bne _load_loop
+	
+	xba
+    lda.b #$00
+    xba
+	clc
+	adc.b #$02
+	A16
+	tax
+	
+	lda.w #$0200			;loaded code starting address
 	sta.l APU23
 
-	A8
-
-	lda.b #$00			;execute code
-	sta.l APU1
-	tya					;stop transfer
-	sta.l APU0
-
-	A16
-	ldx #$80
-	lda.w __tccs_snes_pad_count
-	cmp.w #2
-	bcc _load4
-	ldx #$81
-	
-_load4:
-
-	A8
 	txa
-	sta.l NMITIMEEN		;enable NMI
-	cli					;enable IRQ
-
+	sta.l APU01
+	A8
+	
+-
+	cmp.l APU0
+	bne -
+	
 	A16
-
-_load5:
-
+-
 	lda.l APU0			;wait until SPC700 clears all communication ports, confirming that code has started
 	ora.l APU2
-	bne _load5
-
+	bne -
+	
+	cli					;enable IRQ
+	
 	.endif
 
 	plp
@@ -670,12 +648,14 @@ spc_command_asm:
 	lda.b gss_param
 	sta.l APU23
 	lda.b gss_command
-	sta.l APU01
-
-	cmp.w #SCMD_LOAD	;don't wait acknowledge
-	beq +
-
 	A8
+	xba
+	sta.l APU1
+	xba
+	sta.l APU0
+
+	cmp.b #SCMD_LOAD	;don't wait acknowledge
+	beq +
 
 -
 	lda.l APU0
