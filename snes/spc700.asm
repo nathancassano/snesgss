@@ -1,8 +1,6 @@
 arch snes.smp
 
-define UPDATE_RATE_HZ	160		//quantization of music events
-
-
+define UPDATE_RATE_HZ = 160		//quantization of music events
 
 //memory layout
 // $0000..$00ef direct page, all driver variables are there
@@ -19,149 +17,149 @@ define UPDATE_RATE_HZ	160		//quantization of music events
 
 //I/O registers
 
-define TEST 			$f0
-define CTRL 			$f1
-define ADDR 			$f2
-define DATA 			$f3
-define CPU0				$f4
-define CPU1 			$f5
-define CPU2 			$f6
-define CPU3 			$f7
-define TMP0 			$f8
-define TMP1 			$f9
-define T0TG 			$fa
-define T1TG 			$fb
-define T2TG 			$fc
-define T0OT 			$fd
-define T1OT 			$fe
-define T2OT 			$ff
+define TEST = $f0
+define CTRL = $f1
+define ADDR = $f2
+define DATA = $f3
+define CPU0 = $f4
+define CPU1 = $f5
+define CPU2 = $f6
+define CPU3 = $f7
+define TMP0 = $f8
+define TMP1 = $f9
+define T0TG = $fa
+define T1TG = $fb
+define T2TG = $fc
+define T0OT = $fd
+define T1OT = $fe
+define T2OT = $ff
 
 
 //DSP channel registers, x0..x9, x is channel number
 
-define DSP_VOLL  		$00
-define DSP_VOLR 		$01
-define DSP_PL   		$02
-define DSP_PH    		$03
-define DSP_SRCN  		$04
-define DSP_ADSR1 		$05
-define DSP_ADSR2 		$06
-define DSP_GAIN	 		$07
-define DSP_ENVX	 		$08
-define DSP_OUTX	 		$09
+define DSP_VOLL = $00
+define DSP_VOLR = $01
+define DSP_PL = $02
+define DSP_PH = $03
+define DSP_SRCN = 04
+define DSP_ADSR1 = $05
+define DSP_ADSR2 = 06
+define DSP_GAIN = $07
+define DSP_ENVX = $08
+define DSP_OUTX = $09
 
 
 //DSP registers for global settings
 
-define DSP_MVOLL 		$0c
-define DSP_MVOLR 		$1c
-define DSP_EVOLL 		$2c
-define DSP_EVOLR 		$3c
-define DSP_KON	 		$4c
-define DSP_KOF	 		$5c
-define DSP_FLG	 		$6c
-define DSP_ENDX	 		$7c
-define DSP_EFB	 		$0d
-define DSP_PMON	 		$2d
-define DSP_NON	 		$3d
-define DSP_EON	 		$4d
-define DSP_DIR	 		$5d
-define DSP_ESA	 		$6d
-define DSP_EDL	 		$7d
-define DSP_C0	 		$0f
-define DSP_C1	 		$1f
-define DSP_C2	 		$2f
-define DSP_C3	 		$3f
-define DSP_C4	 		$4f
-define DSP_C5	 		$5f
-define DSP_C6	 		$6f
-define DSP_C7			$7f
+define DSP_MVOLL = $0c
+define DSP_MVOLR = $1c
+define DSP_EVOLL = $2c
+define DSP_EVOLR = $3c
+define DSP_KON = $4c
+define DSP_KOF = $5c
+define DSP_FLG = $6c
+define DSP_ENDX = $7c
+define DSP_EFB = $0d
+define DSP_PMON = $2d
+define DSP_NON = $3d
+define DSP_EON = $4d
+define DSP_DIR = $5d
+define DSP_ESA = $6d
+define DSP_EDL = $7d
+define DSP_C0 = $0f
+define DSP_C1 = $1f
+define DSP_C2 = $2f
+define DSP_C3 = $3f
+define DSP_C4 = $4f
+define DSP_C5 = $5f
+define DSP_C6 = $6f
+define DSP_C7 = $7f
 
 
 //vars
 //max address for vars is $ef, because $f0..$ff is used for the I/O registers
 
-//first two bytes of the direct page are used by IPL!
+//first two bytes of the direct page are used by IPLdefine 
 
-define D_STEREO			$02	//byte
-define D_BUFPTR	 		$03	//byte
-define D_ADSR_L			$04	//byte
-define D_ADSR_H			$05	//byte
-define D_CHx0 			$06	//byte
-define D_CH0x 			$07	//byte
-define D_KON	 		$08	//byte
-define D_KOF	 		$09	//byte
-define D_PAN			$0a	//byte
-define D_VOL			$0b	//byte
-define D_PTR_L			$0c //byte
-define D_PTR_H			$0d //byte
-define D_PITCH_UPD		$0e	//byte
-define D_PITCH_L		$0f	//byte
-define D_PITCH_H		$10	//byte
-define D_TEMP			$11	//byte
-define D_MUSIC_CHNS		$12 //byte
-define D_PAUSE			$13	//byte
-define D_EFFECTS_L		$14	//byte
-define D_EFFECTS_H		$15	//byte
-define D_GLOBAL_TGT		$16	//byte
-define D_GLOBAL_OUT		$17	//byte
-define D_GLOBAL_STEP	$18	//byte
-define D_GLOBAL_DIV		$19	//byte
+define D_STEREO = $02			//byte
+define D_BUFPTR = $03			//byte
+define D_ADSR_L = $04			//byte
+define D_ADSR_H = $05			//byte
+define D_CHx0 = $06			//byte
+define D_CH0x = $07			//byte
+define D_KON = $08			//byte
+define D_KOF = $09			//byte
+define D_PAN = $0a			//byte
+define D_VOL = $0b			//byte
+define D_PTR_L = $0c 			//byte
+define D_PTR_H = $0d 			//byte
+define D_PITCH_UPD = $0e		//byte
+define D_PITCH_L = $0f		//byte
+define D_PITCH_H = $10		//byte
+define D_TEMP = $11			//byte
+define D_MUSIC_CHNS = $12 	//byte
+define D_PAUSE = $13			//byte
+define D_EFFECTS_L = $14		//byte
+define D_EFFECTS_H = $15		//byte
+define D_GLOBAL_TGT = $16		//byte
+define D_GLOBAL_OUT = $17		//byte
+define D_GLOBAL_STEP = $18	//byte
+define D_GLOBAL_DIV = $19		//byte
 
-define S_ENABLE	 		$20	//byte
-define S_BUFFER_OFF		$21	//byte
-define S_BUFFER_PTR		$22	//word
-define S_BUFFER_RD		$24	//byte
-define S_BUFFER_WR		$25	//byte
-
-define D_CHNVOL	 		$30	//8 bytes
-define D_CHNPAN			$38	//8 bytes
-
-define M_PTR_L			$48	//8 bytes
-define M_PTR_H			$50	//8 bytes
-define M_WAIT_L			$58	//8 bytes
-define M_WAIT_H			$60	//8 bytes
-define M_PITCH_L		$68	//8 bytes
-define M_PITCH_H		$70	//8 bytes
-define M_VOL			$78	//8 bytes
-define M_DETUNE			$80	//8 bytes
-define M_SLIDE			$88	//8 bytes
-define M_PORTAMENTO		$90	//8 bytes
-define M_PORTA_TO_L		$98	//8 bytes
-define M_PORTA_TO_H		$a0	//8 bytes
-define M_MODULATION		$a8	//8 bytes
-define M_MOD_OFF		$b0	//8 bytes
-define M_REF_LEN		$b8	//8 bytes
-define M_REF_RET_L		$c0	//8 bytes
-define M_REF_RET_H		$c8	//8 bytes
-define M_INSTRUMENT		$d0	//8 bytes
+define S_ENABLE = $20	//byte
+define S_BUFFER_OFF = $21	//byte
+define S_BUFFER_PTR = $22	//word
+define S_BUFFER_RD = $24	//byte
+define S_BUFFER_WR = $25	//byte
+ 
+define D_CHNVOL = $30	//8 bytes
+define D_CHNPAN = $38	//8 bytes
+  
+define M_PTR_L = $48	//8 bytes
+define M_PTR_H = $50	//8 bytes
+define M_WAIT_L = $58	//8 bytes
+define M_WAIT_H = $60	//8 bytes
+define M_PITCH_L = $68	//8 bytes
+define M_PITCH_H = $70	//8 bytes
+define M_VOL = $78	//8 bytes
+define M_DETUNE = $80	//8 bytes
+define M_SLIDE = $88	//8 bytes
+define M_PORTAMENTO = $90	//8 bytes
+define M_PORTA_TO_L = $98	//8 bytes
+define M_PORTA_TO_H = $a0	//8 bytes
+define M_MODULATION = $a8	//8 bytes
+define M_MOD_OFF = $b0	//8 bytes
+define M_REF_LEN = $b8	//8 bytes
+define M_REF_RET_L = $c0	//8 bytes
+define M_REF_RET_H = $c8	//8 bytes
+define M_INSTRUMENT = $d0	//8 bytes
 
 //DSP registers write buffer located in the stack page, as it is not used for the most part
 //first four bytes are reserved for shortest echo buffer
 
-define D_BUFFER			$0104
+define D_BUFFER = $0104
 
 
-define streamBufSize	28		//how many BRR blocks in a buffer, max is 28 (28*9=252)
-define streamSampleRate	16000	//stream sample rate
+define streamBufSize = 28		//how many BRR blocks in a buffer, max is 28 (28*9=252)
+define streamSampleRate = 16000	//stream sample rate
 
-define streamData		$ffc0-({streamBufSize}*9*9)	//fixed location for streaming data
+define streamData = $ffc0-({streamBufSize}*9*9)	//fixed location for streaming data
 
-define streamData1		{streamData}
-define streamData2		{streamData1}+({streamBufSize}*9)
-define streamData3		{streamData2}+({streamBufSize}*9)
-define streamData4		{streamData3}+({streamBufSize}*9)
-define streamData5		{streamData4}+({streamBufSize}*9)
-define streamData6		{streamData5}+({streamBufSize}*9)
-define streamData7		{streamData6}+({streamBufSize}*9)
-define streamData8		{streamData7}+({streamBufSize}*9)
-define streamSync		{streamData8}+({streamBufSize}*9)
+define streamData1 = {streamData}
+define streamData2 = {streamData1}+({streamBufSize}*9)
+define streamData3 = {streamData2}+({streamBufSize}*9)
+define streamData4 = {streamData3}+({streamBufSize}*9)
+define streamData5 = {streamData4}+({streamBufSize}*9)
+define streamData6 = {streamData5}+({streamBufSize}*9)
+define streamData7 = {streamData6}+({streamBufSize}*9)
+define streamData8 = {streamData7}+({streamBufSize}*9)
+define streamSync = {streamData8}+({streamBufSize}*9)
 
-define streamPitch		(4096*{streamSampleRate}/32000)
+define streamPitch = (4096*{streamSampleRate}/32000)
 
 
 
-	org 0
+	origin 0
 	base $0200-2
 
 	dw end-start			//size of the driver code
@@ -179,7 +177,6 @@ soundEffectsDataPtr:
 	dw 0					//$020a
 musicDataPtr:
 	dw musicDataAddr		//$020c
-
 
 
 editorInit:
@@ -224,6 +221,7 @@ mainLoop:
 
 //all commands jump back here
 
+
 commandDone:
 
 	jsr updateBRRStreamerPos
@@ -258,7 +256,7 @@ cmdStereo:
 
 
 
-cmdGlobalVolume:
+function cmdGlobalVolume {
 
 	lda {CPU2}	//volume
 	ldx {CPU3}	//change speed
@@ -266,20 +264,21 @@ cmdGlobalVolume:
 	jsr setReady
 
 	cmp #127
-	bcc .noClip
+	bcc noClip
 	lda #127
 
-.noClip:
+	noClip:
 
-	asl
-	sta {D_GLOBAL_TGT}
-	stx {D_GLOBAL_STEP}
+		asl
+		sta {D_GLOBAL_TGT}
+		stx {D_GLOBAL_STEP}
 
-	bra commandDone
+		bra commandDone
+
+}
 
 
-
-cmdChannelVolume:
+function cmdChannelVolume {
 
 	lda {CPU2}	//volume
 	ldx {CPU3}	//channel mask
@@ -287,10 +286,10 @@ cmdChannelVolume:
 	jsr setReady
 
 	cmp #127
-	bcc .noClip
+	bcc noClip
 	lda #127
 
-.noClip:
+noClip:
 
 	asl
 	tay
@@ -298,24 +297,24 @@ cmdChannelVolume:
 
 	ldx #0
 
-.check:
+check:
 
 	ror
-	bcc .noVol
+	bcc noVol
 
 	sty {D_CHNVOL},x
 
-.noVol:
+noVol:
 
 	inx
 	cpx #8
-	bne .check
+	bne check
 
 	jsr updateAllChannelsVolume
 
 	bra commandDone
 
-
+}
 
 cmdMusicPlay:
 
@@ -351,11 +350,11 @@ cmdMusicStop:
 
 
 
-stopChannels:
+function stopChannels {
 
 	lda #0
 
-.loop:
+loop:
 
 	pha
 	jsr setChannel
@@ -370,14 +369,14 @@ stopChannels:
 	inc
 	dec {D_MUSIC_CHNS}
 
-	bne .loop
+	bne loop
 
 	jsr bufKeyOffApply
 	jsr bufKeyOnApply
 
 	jmp commandDone
 
-
+}
 
 cmdMusicPause:
 
@@ -392,16 +391,16 @@ cmdMusicPause:
 
 
 
-cmdSfxPlay:
+function cmdSfxPlay { 
 
 	cpy {D_MUSIC_CHNS}		//don't play effects on music channels
-	bcs .play
+	bcs play
 
 	jsr setReady
 
 	jmp	commandDone
 
-.play:
+play:
 
 	sty {D_TEMP}			//remember requested channel
 
@@ -416,7 +415,7 @@ cmdSfxPlay:
 	ldy #0					//check if there is an effect with this number, just in case
 
 	cmp ({D_EFFECTS_L}),y
-	bcs .done
+	bcs done
 
 	asl
 	tay
@@ -431,10 +430,11 @@ cmdSfxPlay:
 	ldx {D_TEMP}
 	jsr startSoundEffect
 
-.done:
+done:
 
 	jmp commandDone
 
+}
 
 
 cmdLoad:
@@ -495,16 +495,16 @@ cmdStreamStop:
 
 
 
-cmdStreamSend:
+function cmdStreamSend {
 
 	lda {S_ENABLE}
-	beq .nosend
+	beq nosend
 
 	lda {S_BUFFER_WR}
 	cmp {S_BUFFER_RD}
-	bne .send
+	bne send
 
-.nosend:
+nosend:
 
 	lda #0
 	sta {CPU2}
@@ -513,7 +513,7 @@ cmdStreamSend:
 
 	jmp commandDone
 
-.send:
+send:
 
 	lda #1
 	sta {CPU2}
@@ -522,11 +522,11 @@ cmdStreamSend:
 
 	ldx #1
 
-.wait1:
+wait1:
 
 	jsr updateBRRStreamerPos
 	cpx {CPU0}
-	bne .wait1
+	bne wait1
 
 
 	ldy {S_BUFFER_OFF}
@@ -546,11 +546,11 @@ cmdStreamSend:
 	inx
 	stx {CPU0}
 
-.wait2:
+wait2:
 
 	jsr updateBRRStreamerPos
 	cpx {CPU0}
-	bne .wait2
+	bne wait2
 
 	lda {CPU1}
 	sta ({S_BUFFER_PTR}),y
@@ -565,11 +565,11 @@ cmdStreamSend:
 	inx
 	stx {CPU0}
 
-.wait3:
+wait3:
 
 	jsr updateBRRStreamerPos
 	cpx {CPU0}
-	bne .wait3
+	bne wait3
 
 	lda {CPU1}
 	sta ({S_BUFFER_PTR}),y
@@ -587,7 +587,7 @@ cmdStreamSend:
 
 	sty {S_BUFFER_OFF}
 	cpy #{streamBufSize}*9
-	bne .skip
+	bne skip
 
 	lda {S_BUFFER_WR}
 	inc
@@ -596,11 +596,11 @@ cmdStreamSend:
 
 	jsr streamSetBufPtr
 
-.skip:
+skip:
 
 	jmp commandDone
 
-
+}
 
 streamStop:
 
@@ -621,13 +621,13 @@ streamStop:
 
 //clear BRR streamer buffers, fill them with c0 00..00 with stop bit in the last block
 
-streamClearBuffers:
+function streamClearBuffers {
 
 	ldx #0
 	lda #{streamBufSize}
 	sta {D_TEMP}
 
-.clear0:
+clear0:
 
 	lda #$c0
 	sta {streamData1},x
@@ -643,7 +643,7 @@ streamClearBuffers:
 	lda #$00
 	ldy #8
 
-.clear1:
+clear1:
 
 	sta {streamData1},x
 	sta {streamData2},x
@@ -656,10 +656,10 @@ streamClearBuffers:
 	sta {streamSync},x
 	inx
 	dey
-	bne .clear1
+	bne clear1
 
 	dec {D_TEMP}
-	bne .clear0
+	bne clear0
 
 	lda #$c3
 	sta {streamData8}+{streamBufSize}*9-9
@@ -667,7 +667,7 @@ streamClearBuffers:
 
 	rts
 
-
+}
 
 streamSetBufPtr:
 
@@ -688,7 +688,7 @@ streamSetBufPtr:
 //start music, using the channels starting from the specified one
 //in: X=the starting channel, musicDataPtr=music data location
 
-startMusic:
+function startMusic {
 
 	lda musicDataPtr+0
 	sta {D_PTR_L}
@@ -700,16 +700,16 @@ startMusic:
 
 	sta {D_MUSIC_CHNS}
 
-	bne .start				//just in case
+	bne startMusic.start				//just in case
 
 	jmp commandDone
 
-.start:
+start:
 
 	sta {D_TEMP}
 	iny
 
-.loop:
+loop:
 
 	phx
 	txa
@@ -726,24 +726,25 @@ startMusic:
 
 	inx						//the song requires too many channels, skip those that don't fit
 	cpx #8
-	bcs .done
+	bcs done
 
 	iny
 	iny
 
 	dec {D_TEMP}
-	bne .loop
+	bne loop
 
-.done:
+done:
 
 	rts
 
+}
 
 
 //start sound effects, almost the same as music
 //in: X=the starting channel, D_PTR=effect data location,D_VOL,D_PAN
 
-startSoundEffect:
+function startSoundEffect {
 
 	ldy #0
 	lda ({D_PTR_L}),y		//how many channels in the song
@@ -752,7 +753,7 @@ startSoundEffect:
 
 	iny
 
-.loop:
+loop:
 
 	phx
 	txa
@@ -763,9 +764,9 @@ startSoundEffect:
 	
 	lda {D_VOL}				//apply effect volume
 	cmp #127
-	bcc .noClip
+	bcc noClip
 
-.noClip:
+noClip:
 
 	asl
 	sta {D_CHNVOL},x
@@ -778,19 +779,19 @@ startSoundEffect:
 
 	inx
 	cpx #8
-	bcs .done
+	bcs done
 
 	iny
 	iny
 
 	dec {D_TEMP}
-	bne .loop
+	bne loop
 
-.done:
+done:
 
 	rts
 
-
+}
 
 //initialize channel
 //in: {D_CH0x}=channel, {D_PTR_L},Y=offset to the channel data
@@ -836,23 +837,23 @@ startChannel:
 
 //run one frame of music player
 
-updateMusicPlayer:
+function updateMusicPlayer {
 
 	jsr bufClear
 
 	lda #0
 
-.loop:
+loop:
 
 	pha
 
 	ldx {D_PAUSE}
-	beq .noPause
+	beq noPause
 
 	cmp {D_MUSIC_CHNS}		//the pause only skips channels with music
-	bcc .skipChannel
+	bcc skipChannel
 
-.noPause:
+noPause:
 
 	jsr setChannel			//select current channel
 
@@ -862,12 +863,12 @@ updateMusicPlayer:
 	jsr updateChannel		//perform channel update
 	jsr updatePitch			//write pitch registers if the pitch was updated
 
-.skipChannel:
+skipChannel:
 
 	pla
 	inc
 	cmp #8
-	bne .loop
+	bne loop
 
 	jsr bufKeyOffApply
 	jsr bufApply
@@ -875,6 +876,7 @@ updateMusicPlayer:
 
 	rts
 
+}
 
 
 //read one byte of a music channel data, and advance the read pointer in temp variable
@@ -885,7 +887,7 @@ readChannelByteZ:
 
 	ldy #0
 
-readChannelByte:
+function readChannelByte {
 
 	lda ({D_PTR_L}),y
 
@@ -895,34 +897,34 @@ readChannelByte:
 	ldx {D_CH0x}
 
 	lda {M_REF_LEN},x		//check reference length
-	beq .done
+	beq done
 
 	dec {M_REF_LEN},x		//decrement reference length
-	bne .done
+	bne done
 
 	lda {M_REF_RET_L},x		//restore original pointer
 	sta {D_PTR_L}
 	lda {M_REF_RET_H},x
 	sta {D_PTR_H}
 
-.done:
+done:
 
 	pla
 	rts
 
-
+}
 
 //perform update of one music data channel, and parse channel data when needed
 
-updateChannel:
+function updateChannel {
 
 	ldx {D_CH0x}
 
 	lda {M_PTR_H},x			//when the pointer MSB is zero, channel is inactive
-	bne .processChannel
+	bne processChannel
 	rts
 
-.processChannel:
+processChannel:
 
 	sta {D_PTR_H}
 	lda {M_PTR_L},x
@@ -930,56 +932,56 @@ updateChannel:
 
 	lda {M_MODULATION},x	//when modulation is active, pitch gets updated constantly
 	sta {D_PITCH_UPD}
-	beq .noModulation
+	beq noModulation
 
 	and #$0f				//advance the modulation pointer
 	clc
 	adc {M_MOD_OFF},x
 
 	cmp #192
-	bcc .noWrap
+	bcc noWrap
 
 	sec
 	sbc #192
 
-.noWrap:
+noWrap:
 
 	sta {M_MOD_OFF},x
 
-.noModulation:
+noModulation:
 
 	lda {M_PORTAMENTO},x
-	bne .doPortamento		//portamento has priority over slides
+	bne doPortamento		//portamento has priority over slides
 
 	lda {M_SLIDE},x
-	bne .doSlide
-	jmp .noSlide
+	bne doSlide
+	jmp noSlide
 
-.doSlide:
+doSlide:
 
 	sta {D_PITCH_UPD}
 
-	bmi .slideDown
-	bra .slideUp
+	bmi slideDown
+	bra slideUp
 
 
 
-.doPortamento:
+doPortamento:
 
 	lda {M_PITCH_H},x		//compare current pitch and needed pitch
 	cmp {M_PORTA_TO_H},x
-	bne .portaCompareDone
+	bne portaCompareDone
 	lda {M_PITCH_L},x
 	cmp {M_PORTA_TO_L},x
 
-.portaCompareDone:
+portaCompareDone:
 
-	beq .noSlide			//go noslide if no pitch change is needed
-	bcs .portaDown
+	beq noSlide			//go noslide if no pitch change is needed
+	bcs portaDown
 
 
 
-.portaUp:
+portaUp:
 
 	inc {D_PITCH_UPD}
 
@@ -992,18 +994,18 @@ updateChannel:
 	sta {M_PITCH_H},x
 
 	cmp {M_PORTA_TO_H},x	//check if the pitch goes higher than needed
-	bne .portaUpLimit
+	bne portaUpLimit
 	lda {M_PITCH_L},x
 	cmp {M_PORTA_TO_L},x
 
-.portaUpLimit:
+portaUpLimit:
 
-	bcs .portaPitchLimit
-	bra .noSlide
+	bcs portaPitchLimit
+	bra noSlide
 
 
 
-.portaDown:
+portaDown:
 
 	inc {D_PITCH_UPD}
 
@@ -1016,29 +1018,29 @@ updateChannel:
 	sta {M_PITCH_H},x
 
 	cmp {M_PORTA_TO_H},x	//check if the pitch goes lower than needed
-	bne .portaDownLimit
+	bne portaDownLimit
 	lda {M_PITCH_L},x
 	cmp {M_PORTA_TO_L},x
 
-.portaDownLimit:
+portaDownLimit:
 
-	bcc .portaPitchLimit
-	bra .noSlide
+	bcc portaPitchLimit
+	bra noSlide
 
 
 
-.portaPitchLimit:
+portaPitchLimit:
 
 	lda {M_PORTA_TO_L},x
 	sta {M_PITCH_L},x
 	lda {M_PORTA_TO_H},x
 	sta {M_PITCH_H},x
 
-	bra .noSlide
+	bra noSlide
 
 
 
-.slideUp:
+slideUp:
 
 	lda {M_PITCH_L},x
 	clc
@@ -1049,18 +1051,18 @@ updateChannel:
 	sta {M_PITCH_H},x
 
 	cmp #$40
-	bcc .noSlide
+	bcc noSlide
 
 	lda #$3f
 	sta {M_PITCH_H},x
 	lda #$30
 	sta {M_PITCH_L},x
 
-	bra .noSlide
+	bra noSlide
 
 
 
-.slideDown:
+slideDown:
 
 	lda {M_PITCH_L},x
 	clc
@@ -1070,7 +1072,7 @@ updateChannel:
 	adc #255
 	sta {M_PITCH_H},x
 
-	bcs .noSlide
+	bcs noSlide
 
 	lda #0
 	sta {M_PITCH_H},x
@@ -1078,62 +1080,62 @@ updateChannel:
 
 
 
-.noSlide:
+noSlide:
 
 	lda {M_WAIT_L},x
-	bne .wait1
+	bne wait1
 	lda {M_WAIT_H},x
-	beq .readLoopStart
+	beq readLoopStart
 
 	dec {M_WAIT_H},x
 
-.wait1:
+wait1:
 
 	dec {M_WAIT_L},x
 
 	lda {M_WAIT_L},x
 	ora {M_WAIT_H},x
 
-	beq .readLoopStart
+	beq readLoopStart
 
 	rts
 
 
-.readLoopStart:
+readLoopStart:
 
 	jsr updateChannelVolume
 	
-.readLoop:
+readLoop:
 
 	jsr readChannelByteZ		//read a new byte, set Y to zero, X to D_CH0x
 
 	cmp #149
-	bcc .setShortDelay
+	bcc setShortDelay
 	cmp #245
-	beq .keyOff
-	bcc .newNote
+	beq keyOff
+	bcc newNote
 
 	cmp #246
-	beq .setLongDelay
+	beq setLongDelay
 	cmp #247
-	beq .setEffectVolume
+	beq setEffectVolume
 	cmp #248
-	beq .setEffectPan
+	beq setEffectPan
 	cmp #249
-	beq .setEffectDetune
+	beq setEffectDetune
 	cmp #250
-	beq .setEffectSlide
+	beq setEffectSlide
 	cmp #251
-	beq .setEffectPortamento
+	beq setEffectPortamento
 	cmp #252
-	beq .setEffectModulation
+	beq setEffectModulation
 	cmp #253
-	beq .setReference
+	beq setReference
 	cmp #254
-	bne .jumpLoop
-	jmp .setInstrument
+	bne jumpLoop
+	jmp setInstrument
 
-.jumpLoop:	//255
+jumpLoop:	//255
 
 	jsr readChannelByte
 	pha
@@ -1143,27 +1145,27 @@ updateChannel:
 	pla
 	sta {D_PTR_L}
 
-	bra .readLoop
+	bra readLoop
 
 
 
-.keyOff:
+keyOff:
 
 	jsr bufKeyOff
 
-	bra .readLoop
+	bra readLoop
 
 
 
-.setShortDelay:
+setShortDelay:
 
 	sta {M_WAIT_L},x
 
-	bra .storePtr
+	bra storePtr
 
 
 
-.newNote:
+newNote:
 
 	sec
 	sbc #150
@@ -1171,15 +1173,15 @@ updateChannel:
 	jsr setPitch
 
 	lda {M_PORTAMENTO},x	//only set key on when portamento is not active
-	bne .readLoop
+	bne readLoop
 
 	jsr bufKeyOn
 
-	bra .readLoop
+	bra readLoop
 
 
 
-.setLongDelay:
+setLongDelay:
 
 	jsr readChannelByte
 	sta {M_WAIT_L},x
@@ -1187,11 +1189,11 @@ updateChannel:
 	jsr readChannelByte
 	sta {M_WAIT_H},x
 
-	bra .storePtr
+	bra storePtr
 
 
 
-.setEffectVolume:
+setEffectVolume:
 
 	jsr readChannelByte		//read volume value
 
@@ -1199,11 +1201,11 @@ updateChannel:
 
 	jsr updateChannelVolume	//apply volume and pan
 
-	bra .readLoop
+	bra readLoop
 
 
 
-.setEffectPan:
+setEffectPan:
 
 	jsr readChannelByte		//read pan value
 
@@ -1211,52 +1213,52 @@ updateChannel:
 
 	jsr updateChannelVolume	//apply volume and pan
 
-	bra .readLoop
+	bra readLoop
 
 
 
-.setEffectDetune:
+setEffectDetune:
 
 	jsr readChannelByte		//read detune value
 
 	sta {M_DETUNE},x
 	inc {D_PITCH_UPD}		//set pitch update flag
 
-	jmp .readLoop
+	jmp readLoop
 
 
 
-.setEffectSlide:
+setEffectSlide:
 
 	jsr readChannelByte		//read slide value (8-bit signed, -99..99)
 
 	sta {M_SLIDE},x
 
-	jmp .readLoop
+	jmp readLoop
 
 
 
-.setEffectPortamento:
+setEffectPortamento:
 
 	jsr readChannelByte		//read portamento value (8-bit unsigned, 0..99)
 
 	sta {M_PORTAMENTO},x
 
-	jmp .readLoop
+	jmp readLoop
 
 
 
-.setEffectModulation:
+setEffectModulation:
 
 	jsr readChannelByte		//read modulation value
 
 	sta {M_MODULATION},x
 
-	jmp .readLoop
+	jmp readLoop
 
 
 
-.setReference:
+setReference:
 
 	jsr readChannelByte		//read reference LSB
 	pha
@@ -1276,20 +1278,20 @@ updateChannel:
 	pla
 	sta {D_PTR_L}
 
-	jmp .readLoop
+	jmp readLoop
 
 
 
-.setInstrument:
+setInstrument:
 
 	jsr readChannelByte
-	jsr setInstrument
+	jsr setInstrumentFunc
 
-	jmp .readLoop
+	jmp readLoop
 
 
 
-.storePtr:
+storePtr:
 
 	ldx {D_CH0x}
 
@@ -1300,11 +1302,11 @@ updateChannel:
 
 	rts
 
-
+}
 
 //initialize DSP registers and driver variables
 
-initDSPAndVars:
+function initDSPAndVars {
 
 	ldx #0
 
@@ -1337,7 +1339,7 @@ initDSPAndVars:
 
 	ldx #0
 
-.initChannels:
+initChannels:
 
 	lda #0
 	sta {M_PTR_H},x
@@ -1351,23 +1353,23 @@ initDSPAndVars:
 
 	inx
 	cpx #8
-	bne .initChannels
+	bne initChannels
 
 	jsr streamClearBuffers
 
 	rts
 
-
+}
 
 //updates play position for the BRR streamer
 
-updateBRRStreamerPos:
+function updateBRRStreamerPos {
 
 	lda #{DSP_ENDX}				//check if channel 6 stopped playing
 	sta {ADDR}
 	lda {DATA}
 	and #$40
-	beq .skip
+	beq skip
 	sta {DATA}
 
 	lda {S_BUFFER_RD}
@@ -1375,10 +1377,11 @@ updateBRRStreamerPos:
 	and #7
 	sta {S_BUFFER_RD}
 
-.skip:
+skip:
 
 	rts
 
+}
 
 
 //set the ready flag for the 65816 side, so it can send a new command
@@ -1417,13 +1420,13 @@ setChannel:
 //set instrument (sample and ADSR) for specified channel
 //in: {D_CHx0}=channel, A=instrument number 0..255
 
-setInstrument:
+function setInstrumentFunc {
 
 	tay
 
 	ldx {D_CH0x}
 	cmp {M_INSTRUMENT},x
-	beq .skip
+	beq skip
 	sta {M_INSTRUMENT},x
 
 	lda {D_CHx0}
@@ -1449,16 +1452,16 @@ setInstrument:
 	lda ({D_ADSR_L}),y			//second adsr byte
 	jsr bufRegWrite
 
-.skip:
+skip:
 
 	rts
 
-
+}
 
 //set pitch variables accoding to note
 //in: {D_CH0x}=channel, A=note
 
-setPitch:
+function setPitch {
 
 	asl
 	tay
@@ -1472,14 +1475,14 @@ setPitch:
 	sta {M_PORTA_TO_H},x
 
 	lda {M_PORTAMENTO},x
-	beq .portaOff
+	beq portaOff
 
 	cmp #99						//P99 gets legato effect, changes pitch right away without sending keyon
-	beq .portaOff
+	beq portaOff
 
 	rts
 
-.portaOff:
+portaOff:
 
 	lda {M_PORTA_TO_L},x		//when portamento is inactive, copy the target pitch into current pitch immideately
 	sta {M_PITCH_L},x
@@ -1490,18 +1493,19 @@ setPitch:
 
 	rts
 
+}
 
 
 //apply current pitch of the channel, also applies the detune value
 //in: {D_CHx0}=channel if the pitch change flag is set
 
-updatePitch:
+function updatePitch {
 
 	lda {D_PITCH_UPD}
-	bne .update
+	bne update
 	rts
 
-.update:
+update:
 
 	ldx {D_CH0x}
 
@@ -1514,7 +1518,7 @@ updatePitch:
 	sta {D_PITCH_H}
 
 	lda {M_MODULATION},x
-	beq .noModulation
+	beq noModulation
 
 	and #$f0
 	tay
@@ -1522,9 +1526,9 @@ updatePitch:
 	lda {M_MOD_OFF},x
 	tax
 	lda vibratoTable,x
-	bmi .modSubtract
+	bmi modSubtract
 
-.modAdd:
+modAdd:
 
 	mul
 	tya
@@ -1536,9 +1540,9 @@ updatePitch:
 	adc #0
 	sta {D_PITCH_H}
 
-	bra .noModulation
+	bra noModulation
 
-.modSubtract:
+modSubtract:
 
 	eor #255
 	inc
@@ -1555,7 +1559,7 @@ updatePitch:
 	sbc #0
 	sta {D_PITCH_H}
 
-.noModulation:
+noModulation:
 
 	lda {D_CHx0}
 	ora #{DSP_PH}
@@ -1571,45 +1575,46 @@ updatePitch:
 
 	rts
 
+}
 
 
 //set volume and pan for current channel, according to M_VOL,D_CHNVOL,D_CHNPAN, and music pause state
 //in: {D_CHx0}=channel
 
-updateChannelVolume:
+function updateChannelVolume {
 
 	ldx {D_CH0x}
 
 	cpx {D_MUSIC_CHNS}
-	bcs .noMute
+	bcs noMute
 
 	lda {D_PAUSE}
-	beq .noMute
+	beq noMute
 
 	lda #0
-	bra .calcVol
+	bra calcVol
 
-.noMute:
+noMute:
 
 	lda {D_CHNVOL},x		//get virtual channel volume
 
-.calcVol:
+calcVol:
 
 	ldy {M_VOL},x			//get music channel volume
 	mul
 	sty {D_VOL}				//resulting volume
 
 	lda {D_STEREO}
-	bne .stereo
+	bne stereo
 
-.mono:
+mono:
 
 	lda {D_VOL}
 	pha
 	pha
-	bra .setVol
+	bra setVol
 
-.stereo:
+stereo:
 
 	lda {D_CHNPAN},x		//calculate left volume
 	eor #$ff
@@ -1623,7 +1628,7 @@ updateChannelVolume:
 	mul
 	phy
 
-.setVol:
+setVol:
 
 	lda {D_CHx0}			//write volume registers
 	ora #{DSP_VOLR}
@@ -1639,15 +1644,16 @@ updateChannelVolume:
 
 	rts
 
+}
 
 
 //set volume and pan for all channels
 
-updateAllChannelsVolume:
+function updateAllChannelsVolume {
 
 	lda #0
 
-.updVol:
+updVol:
 
 	pha
 	jsr setChannel
@@ -1655,69 +1661,70 @@ updateAllChannelsVolume:
 	pla
 	inc
 	cmp #8
-	bne .updVol
+	bne updVol
 
 	jsr bufApply
 
 	rts
 
+}
 
 
 //update global volume, considering current fade speed
 
-updateGlobalVolume:
+function updateGlobalVolume {
 
 	inc {D_GLOBAL_DIV}
 	lda {D_GLOBAL_DIV}
 	and #7
-	beq .update
+	beq update
 	lda {D_GLOBAL_STEP}
 	cmp #255
-	beq .update
+	beq update
 
 	rts
 
-.update:
+update:
 
 	lda {D_GLOBAL_OUT}
 	cmp {D_GLOBAL_TGT}
-	beq .setVolume
+	beq setVolume
 
-	bcs .fadeOut
+	bcs fadeOut
 	
 
-.fadeIn:
+fadeIn:
 
 	adc {D_GLOBAL_STEP}
-	bcc .fadeInLimit
+	bcc fadeInLimit
 	
 	lda {D_GLOBAL_TGT}
-	bra .setVolume
+	bra setVolume
 	
-.fadeInLimit:
+fadeInLimit:
 
 	cmp {D_GLOBAL_TGT}
-	bcc .setVolume
+	bcc setVolume
 	lda {D_GLOBAL_TGT}
-	bra .setVolume
+	bra setVolume
 
 
-.fadeOut:
+fadeOut:
 
 	sbc {D_GLOBAL_STEP}
-	bcs .fadeOutLimit
+	bcs fadeOutLimit
 	
 	lda {D_GLOBAL_TGT}
-	bra .setVolume
+	bra setVolume
 	
-.fadeOutLimit:
+fadeOutLimit:
 	
 	cmp {D_GLOBAL_TGT}
-	bcs .setVolume
+	bcs setVolume
 	lda {D_GLOBAL_TGT}
 	
 
-.setVolume:
+setVolume:
 
 	sta {D_GLOBAL_OUT}
 	lsr
@@ -1731,8 +1738,9 @@ updateGlobalVolume:
 	sta {DATA}
 
 	rts
-	
-	
+		
+}
+
 	
 //clear register writes buffer, just set ptr to 0
 
@@ -1794,14 +1802,14 @@ bufKeyOff:
 
 //send writes from buffer and clear it
 
-bufApply:
+function bufApply {
 
 	lda {D_BUFPTR}
-	beq .done
+	beq done
 
 	ldx #0
 
-.loop:
+loop:
 
 	lda {D_BUFFER},x
 	sta {ADDR}
@@ -1811,14 +1819,14 @@ bufApply:
 	sta {DATA}
 	inx
 	cpx {D_BUFPTR}
-	bne .loop
+	bne loop
 	str {D_BUFPTR}=#0
 
-.done:
+done:
 
 	rts
 
-
+}
 
 //send keyon from the temp variable
 
@@ -1857,16 +1865,16 @@ bufKeyOffApply:
 
 //send sequence of DSP register writes, used for init
 
-sendDSPSequence:
+function sendDSPSequence {
 
 	stx {D_PTR_L}
 	sty {D_PTR_H}
 	ldy #0
 
-.loop:
+loop:
 
 	lda ({D_PTR_L}),y
-	beq .done
+	beq done
 
 	sta {ADDR}
 	iny
@@ -1874,12 +1882,13 @@ sendDSPSequence:
 	sta {DATA}
 	iny
 
-	bra .loop
+	bra loop
 
-.done:
+done:
 
 	rts
 
+}
 
 
 cmdList:
@@ -1984,9 +1993,13 @@ BRRStreamInitData:
 	db {DSP_KON}      ,$c0					//start channels 6 and 7
 	db 0
 
+beforeSampleDirAddr:
 
+//alignment calculation, get current location, divide by 256 and it loses the remainder.
+//then multiply it back by 256 and then remove the current location.
+print "Alignment location: ", beforeSampleDirAddr, " Zeroes to fill: ",(beforeSampleDirAddr/256)*256+256-beforeSampleDirAddr 
 
-	align 256		//sample dir list should be aligned to 256 bytes
+fill (beforeSampleDirAddr/256)*256+256-beforeSampleDirAddr , 0 //fill zeroes to achieve alignment
 
 sampleDirAddr:		//four bytes per sample, first 9 entries reserved for the BRR streamer
 
@@ -1999,3 +2012,9 @@ sampleDirAddr:		//four bytes per sample, first 9 entries reserved for the BRR st
 	dw {streamData7},{streamData7}
 	dw {streamData8},{streamData8}
 	dw {streamSync},{streamSync}
+
+	
+end:
+
+sampleADSRAddr:
+musicDataAddr:
