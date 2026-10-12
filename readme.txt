@@ -1,5 +1,6 @@
 SNES Game Sound System (or Solution)
 
+v1.43 11.10.26 - SPC700 driver fix for deadlock in the command handshake
 v1.42 20.02.17 - Instrument selection in the main menu
 v1.41 25.05.14 - MIDI input device can be changed in the config file
 v1.4  24.05.14 - paste over; shifting markers and labels in multichannel
@@ -245,8 +246,8 @@ using the code as a guide. spc700.bin loading and starting address is
 $0200. When the driver is loaded, communication is done through APU ports
 using the communication routines (see snes/sneslib.asm:542 and beyond).
 Driver loading code is in snes/sneslib.h:774. 'Play a sound effect'
-function is in sneslib.asm:842, it also uses spc_command_asm routine
-(uniform for most commands), which is in sneslib.asm:658.
+function is in sneslib.asm:830, it also uses spc_command_asm routine
+(uniform for most commands), which is in sneslib.asm:636.
 
 The spc700.asm file in the /snes/ directory is only provided for reference,
 in case you're interested in internals of the driver. It does not need to

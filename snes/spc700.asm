@@ -79,7 +79,7 @@ define DSP_C7 = $7f
 //vars
 //max address for vars is $ef, because $f0..$ff is used for the I/O registers
 
-//first two bytes of the direct page are used by IPLdefine 
+//first two bytes of the direct page are used by IPL!
 
 define D_STEREO = $02			//byte
 define D_BUFPTR = $03			//byte
@@ -2004,11 +2004,10 @@ BRRStreamInitData:
 
 beforeSampleDirAddr:
 
-//alignment calculation, get current location, divide by 256 and it loses the remainder.
-//then multiply it back by 256 and then remove the current location.
-print "Alignment location: ", beforeSampleDirAddr, " Zeroes to fill: ",(beforeSampleDirAddr/256)*256+256-beforeSampleDirAddr 
+//sample dir list should be aligned to 256 bytes, this bass version has no align command
+//so fill zeroes up to the next multiple of 256 (nothing if the address is already aligned)
 
-fill (beforeSampleDirAddr/256)*256+256-beforeSampleDirAddr , 0 //fill zeroes to achieve alignment
+fill (256-(beforeSampleDirAddr&255))&255,0
 
 sampleDirAddr:		//four bytes per sample, first 9 entries reserved for the BRR streamer
 
