@@ -105,6 +105,7 @@ define D_GLOBAL_TGT = $16		//byte
 define D_GLOBAL_OUT = $17		//byte
 define D_GLOBAL_STEP = $18	//byte
 define D_GLOBAL_DIV = $19		//byte
+define D_CMD_COUNT = $1a		//byte, incremented and copied to CPU3 for every command received
 
 define S_ENABLE = $20	//byte
 define S_BUFFER_OFF = $21	//byte
@@ -197,6 +198,10 @@ mainLoopInit:
 	lda #$81				//enable timer 0 and IPL
 	sta {CTRL}
 
+	lda #0					//command acknowledge counter starts at zero, the 65816 side
+	sta {D_CMD_COUNT}		//expects all four ports to be clear once the driver has started
+	sta {CPU3}
+
 	jsr setReady
 
 
@@ -208,7 +213,11 @@ mainLoop:
 
 	lda {CPU0}				//read command code, when it is zero (SCMD_NONE), no new command
 	beq commandDone
+	cmp {CPU0}				//read it again, a read at the same time the 65816 writes the port
+	bne mainLoop			//can return garbage, so only accept the code once two reads agree
 	sta {CPU0}				//set busy flag for CPU by echoing a command code
+	inc {D_CMD_COUNT}		//acknowledge the command with a counter in CPU3 that never returns
+	str {CPU3}={D_CMD_COUNT}	//to its previous value, so the 65816 side can't miss it
 	tay
 	and #$0f				//get command offset in the jump table into X
 	asl

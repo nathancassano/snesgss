@@ -643,6 +643,9 @@ spc_command_asm:
 	lda.l APU0
 	bne -
 
+	lda.l APU3			;the driver increments APU3 for every command it takes, remember
+	pha					;the current value to detect the acknowledge
+
 	A16
 
 	lda.b gss_param
@@ -658,10 +661,15 @@ spc_command_asm:
 	beq +
 
 -
-	lda.l APU0
+	lda.l APU0			;acknowledged when the command code is echoed back, but the driver
+	bne +				;clears it again when the command is done and an interrupt here can
+	lda.l APU3			;miss that, so also accept APU3 changing, which stays changed
+	cmp 1,s
 	beq -
 
 +
+	pla
+
 	.endif
 
 	rtl
@@ -901,13 +909,22 @@ _stream_wait7:
 	lda.l APU0
 	bne _stream_wait7
 
+	lda.l APU3			;acknowledge counter, see spc_command_asm
+	pha
+
 	lda.b #SCMD_STREAM_STOP
 	sta.l APU0
 
 _stream_wait8:
 
 	lda.l APU0
+	bne +
+	lda.l APU3
+	cmp 1,s
 	beq _stream_wait8
+
++
+	pla
 
 	bra _stream_update_done
 
@@ -920,13 +937,22 @@ _stream_wait1:
 	lda.l APU0
 	bne _stream_wait1
 
+	lda.l APU3			;acknowledge counter, see spc_command_asm
+	pha
+
 	lda.b #SCMD_STREAM_SEND
 	sta.l APU0
 
 _stream_wait2:
 
 	lda.l APU0
+	bne +
+	lda.l APU3
+	cmp 1,s
 	beq _stream_wait2
+
++
+	pla
 
 _stream_wait3:
 
