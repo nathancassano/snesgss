@@ -260,6 +260,16 @@ the stereo enable command must be sent first.
 
 
 
+Notes
+
+WARNING: keep samples below full volume. A sample that peaks at the very
+top of its range can click on a real SNES and in accurate emulators, even
+though it sounds clean in the editor. If you hear one, lower the instrument's
+Vol slider in the instrument editor a little (128 to 112 is usually enough)
+and export again. Don't normalize samples to 0 dB or boost them hard with the EQ.
+
+
+
 Music data format
 
 Header:
